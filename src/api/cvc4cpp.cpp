@@ -5682,36 +5682,42 @@ Options& Solver::getOptions(void) { return d_smtEngine->getOptions(); }
 /* Optimization                                                               */
 /* -------------------------------------------------------------------------- */
 
+Objective:: Objective(Term t, ObjectiveType type){
+  d_type = type;
+  d_term = t;
+  d_result = OPT_UNKNOWN;
+}
+
 /**
  * makes a minimize objective
  */
 
-objective makeMinimize(Term t){};
+Objective Solver::makeMinimize(Term t) const {}
 
 /**
  * Calls maximization funtion for solver on objective
  */
-objective makeMaximize(Term t){};
+Objective Solver::makeMaximize(Term t) const {}
 
 /**
  * Asserts the objective to make the solver optimize it
  **/
-void assertObjective(objective o){};
+void Solver::assertObjective(Objective o) const {}
 
 /**
  * Asserts the objective to make the solver optimize it
  **/
-objective_type objectiveGetType(objective o){return o.get_objective_type();}
+ObjectiveType Solver::objectiveGetType(Objective o) const {return o.getObjectiveType();}
 
 /**
  * Asserts the objective to make the solver optimize it
  **/
-opt_result objectiveGetResult(objective o){return o.get_opt_result();}
+OptResult Solver::objectiveGetResult(Objective o) const {return o.getOptResult();}
 
 /**
  * Gets the term related to the objective
  */
-Term objectiveGetTerm(objective o){return o.get_term();}
+Term Solver::objectiveGetTerm(Objective o) const {return o.getTerm();}
 
 /**
  * Gets statistics on the current optimization state
@@ -5722,13 +5728,13 @@ Term objectiveGetTerm(objective o){return o.get_term();}
  * Gets the lower bound on objective after solver:
  *  finishes, hits resource limit, or gets intterupted
  */
-Term Solver::objectiveGetLower(objective o){}
+Term Solver::objectiveGetLower(Objective o) const {}
 
 /**
  * Gets the upper bound on objective after solver:
  *  finishes, hits resource limit, or gets intterupted
  */
-Term solver::objectiveGetUpper(objective o){}
+Term Solver::objectiveGetUpper(Objective o) const {}
 
 /**
  * Sets the resource limit on our solver to prevent infinite recursion

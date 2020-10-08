@@ -2148,7 +2148,7 @@ struct CVC4_PUBLIC RoundingModeHashFunction
 /* Class and enums for optimization                                           */
 /* -------------------------------------------------------------------------- */
 
-enum opt_result 
+enum CVC4_PUBLIC OptResult 
 {
   OPT_UNKNOWN, 
   OPT_UNSAT, 
@@ -2157,27 +2157,28 @@ enum opt_result
   OPT_OPTIMAL 
 };
 
-enum objective_type 
+enum CVC4_PUBLIC ObjectiveType 
 {
   OBJECTIVE_MINIMIZE, 
   OBJECTIVE_MAXIMIZE
 };
 
-class CVC4_PUBLIC Objective{
+class CVC4_PUBLIC Objective
+{
   friend class solver;
 
   public:
-  objective_type getObjectiveType() {return d_type;}
-  opt_result getOptResult() {return d_result;}
+  ObjectiveType getObjectiveType() {return d_type;}
+  OptResult getOptResult() {return d_result;}
   Term getTerm() {return d_term;}
-  objective(Term t, objective_type d_type);
-  ~objective;
+  Objective(Term t, ObjectiveType d_type);
+  //~Objective();
 
   private:
-  objective_type d_type;
-  opt_result d_result;
+  ObjectiveType d_type;
+  OptResult d_result;
   Term d_term;
-}
+};
 
 /* -------------------------------------------------------------------------- */
 /* Solver                                                                     */
@@ -3378,33 +3379,32 @@ class CVC4_PUBLIC Solver
   /* Optimization                                                         */
   /* .................................................................... */
 
-  objective makeMinimize(Term t) const;
+  Objective makeMinimize(Term t) const;
 
   /**
    * Calls maximization funtion for solver on objective
    */
-  objective makeMaximize(Term t) const;
+  Objective makeMaximize(Term t) const;
 
   /**
    * Asserts the objective to make the solver optimize it
    **/
-  void assertObjective(objective o) const;
+  void assertObjective(Objective o) const;
 
   /**
    * Asserts the objective to make the solver optimize it
    **/
-  objective_type objectiveGetType(objective o) const;
-
+  ObjectiveType objectiveGetType(Objective o) const;
 
   /**
    * Asserts the objective to make the solver optimize it
    **/
-  opt_result objectiveGetResult(objective o) const;
+  OptResult objectiveGetResult(Objective o) const;
 
   /**
    * Get the term related to an objective
    */
-  Term objectiveGetTerm(objective o) const;
+  Term objectiveGetTerm(Objective o) const;
 
   /**
    * Gets statistics on the current optimization state
@@ -3415,13 +3415,13 @@ class CVC4_PUBLIC Solver
    * Gets the lower bound on objective after solver:
    *  finishes, hits resource limit, or gets intterupted
    */
-  Term objectiveGetLower(objective o) const;
+  Term objectiveGetLower(Objective o) const;
 
   /**
    * Gets the upper bound on objective after solver:
    *  finishes, hits resource limit, or gets intterupted
    */
-  Term objectiveGetUpper(objective o) const;
+  Term objectiveGetUpper(Objective o) const;
 
   /**
    * Sets the resource limit on our solver to prevent infinite recursion
