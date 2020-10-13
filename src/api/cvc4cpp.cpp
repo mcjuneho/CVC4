@@ -5682,68 +5682,31 @@ Options& Solver::getOptions(void) { return d_smtEngine->getOptions(); }
 /* Optimization                                                               */
 /* -------------------------------------------------------------------------- */
 
-Objective:: Objective(Term t, ObjectiveType type){
-  d_type = type;
-  d_term = t;
-  d_result = OPT_UNKNOWN;
+Objective::Objective(Term t, ObjectiveType type):
+    : d_type(type), d_term(t), d_result(OPT_UNKNOWN)
+{
 }
-
-/**
- * makes a minimize objective
- */
 
 Objective Solver::makeMinimize(Term t) const {}
 
-/**
- * Calls maximization funtion for solver on objective
- */
 Objective Solver::makeMaximize(Term t) const {}
 
-/**
- * Asserts the objective to make the solver optimize it
- **/
 void Solver::assertObjective(Objective o) const {}
 
-/**
- * Asserts the objective to make the solver optimize it
- **/
 ObjectiveType Solver::objectiveGetType(Objective o) const {return o.getObjectiveType();}
 
-/**
- * Asserts the objective to make the solver optimize it
- **/
 OptResult Solver::objectiveGetResult(Objective o) const {return o.getOptResult();}
 
-/**
- * Gets the term related to the objective
- */
 Term Solver::objectiveGetTerm(Objective o) const {return o.getTerm();}
 
-/**
- * Gets statistics on the current optimization state
- */
 //TermVec Solver::get_objectives(void){}
 
-/**
- * Gets the lower bound on objective after solver:
- *  finishes, hits resource limit, or gets intterupted
- */
 Term Solver::objectiveGetLower(Objective o) const {}
 
-/**
- * Gets the upper bound on objective after solver:
- *  finishes, hits resource limit, or gets intterupted
- */
 Term Solver::objectiveGetUpper(Objective o) const {}
 
-/**
- * Sets the resource limit on our solver to prevent infinite recursion
- */
 //void Solver::set_resource_limit(int limit){}
 
-/**
- * interrupts solver, allowing for approximation of objective
- */
 //void Solver::interrupt(void){}
 
 /* -------------------------------------------------------------------------- */

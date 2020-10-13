@@ -3379,10 +3379,13 @@ class CVC4_PUBLIC Solver
   /* Optimization                                                         */
   /* .................................................................... */
 
+  /**
+   * Creates an objective of type minimize. Returned to user.
+   */
   Objective makeMinimize(Term t) const;
 
   /**
-   * Calls maximization funtion for solver on objective
+   * Creates an objective of type maximize. Returned to user.
    */
   Objective makeMaximize(Term t) const;
 
