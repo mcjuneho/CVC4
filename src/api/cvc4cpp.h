@@ -3412,7 +3412,7 @@ class CVC4_PUBLIC Solver
   /**
    * Gets statistics on the current optimization state
    */
-  //TermVec get_objectives(void) const;
+  TermVec get_objectives(void) const;
 
   /**
    * Gets the lower bound on objective after solver:
@@ -3429,12 +3429,12 @@ class CVC4_PUBLIC Solver
   /**
    * Sets the resource limit on our solver to prevent infinite recursion
    */
-  //void set_resource_limit(int limit) const;
+  void set_resource_limit(int limit) const;
 
   /**
    * interrupts solver, allowing for approximation of objective
    */
-  //void interrupt(void) const;
+  void interrupt(void) const;
 
  private:
   /* Helper to convert a vector of internal types to sorts. */

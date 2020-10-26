@@ -5682,7 +5682,7 @@ Options& Solver::getOptions(void) { return d_smtEngine->getOptions(); }
 /* Optimization                                                               */
 /* -------------------------------------------------------------------------- */
 
-Objective::Objective(Term t, ObjectiveType type):
+Objective::Objective(Term t, ObjectiveType type)
     : d_type(type), d_term(t), d_result(OPT_UNKNOWN)
 {
 }
@@ -5699,15 +5699,24 @@ OptResult Solver::objectiveGetResult(Objective o) const {return o.getOptResult()
 
 Term Solver::objectiveGetTerm(Objective o) const {return o.getTerm();}
 
-//TermVec Solver::get_objectives(void){}
+TermVec Solver::get_objectives(void){
+  //not yet implemented
+  Assert(false);
+}
 
 Term Solver::objectiveGetLower(Objective o) const {}
 
 Term Solver::objectiveGetUpper(Objective o) const {}
 
-//void Solver::set_resource_limit(int limit){}
+void Solver::set_resource_limit(int limit){
+  //not yet implemented
+  Assert(false);
+}
 
-//void Solver::interrupt(void){}
+void Solver::interrupt(void){
+  //not yet implemented
+  Assert(false);
+}
 
 /* -------------------------------------------------------------------------- */
 /* Conversions                                                                */
