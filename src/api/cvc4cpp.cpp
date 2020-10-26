@@ -5691,6 +5691,12 @@ Objective Solver::makeMinimize(Term t) const {}
 
 Objective Solver::makeMaximize(Term t) const {}
 
+Objective Solver::makeMinMax(const std::vector<Term>& terms) const {}
+
+Objective Solver::makeMaxMin(const std::vector<Term>& terms) const {}
+
+Objective Solver::assertSoft(Term t, Term w) const {}
+
 void Solver::assertObjective(Objective o) const {}
 
 ObjectiveType Solver::objectiveGetType(Objective o) const {return o.getObjectiveType();}
@@ -5699,22 +5705,24 @@ OptResult Solver::objectiveGetResult(Objective o) const {return o.getOptResult()
 
 Term Solver::objectiveGetTerm(Objective o) const {return o.getTerm();}
 
-TermVec Solver::get_objectives(void){
-  //not yet implemented
-  Assert(false);
-}
-
 Term Solver::objectiveGetLower(Objective o) const {}
 
 Term Solver::objectiveGetUpper(Objective o) const {}
 
-void Solver::set_resource_limit(int limit){
-  //not yet implemented
+TermVec Solver::getObjectives(void) const {
+  //not yet implemented, implement with multiobjective optimization
   Assert(false);
 }
 
-void Solver::interrupt(void){
-  //not yet implemented
+//Term Solver::objectiveGetValue(Objective o, ObjectiveValue v) const {}
+
+void Solver::setResourceLimit(int limit) const {
+  //not yet implemented, implement with base and bound 
+  Assert(false);
+}
+
+void Solver::interrupt(void) const {
+  //not yet implemented, implement with base and bound
   Assert(false);
 }
 

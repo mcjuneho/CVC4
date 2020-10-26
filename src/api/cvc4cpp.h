@@ -2163,6 +2163,14 @@ enum CVC4_PUBLIC ObjectiveType
   OBJECTIVE_MAXIMIZE
 };
 
+enum CVC4_PUBLIC ObjectiveValue
+{
+  OPTIMUM,
+  FINAL_LOWER,
+  FINAL_UPPER,
+  FINAL_ERROR
+};
+
 class CVC4_PUBLIC Objective
 {
   friend class solver;
@@ -3390,9 +3398,33 @@ class CVC4_PUBLIC Solver
   Objective makeMaximize(Term t) const;
 
   /**
+   * Creates an objective of type min(max t1, max t2). Returned to user.
+   */
+  Objective makeMinMax(const std::vector<Term>& terms) const;
+
+  /**
+   * Creates an objective of type max(min t1, min t2). Returned to user.
+   */
+  Objective makeMaxMin(const std::vector<Term>& terms) const;
+
+  /**
+   * Makes and asserts a soft assertion with weight w
+   */
+  Objective assertSoft(Term t, Term w) const;
+
+  /**
    * Asserts the objective to make the solver optimize it
    **/
   void assertObjective(Objective o) const;
+
+  /**
+   * Gets the value of the objectives:
+      last optimum value
+      final lower bound
+      final upper bound
+      final error value
+   **/
+  //Term objectiveGetValue(Objective o, ObjectiveValue v) const;
 
   /**
    * Asserts the objective to make the solver optimize it
@@ -3410,11 +3442,6 @@ class CVC4_PUBLIC Solver
   Term objectiveGetTerm(Objective o) const;
 
   /**
-   * Gets statistics on the current optimization state
-   */
-  TermVec get_objectives(void) const;
-
-  /**
    * Gets the lower bound on objective after solver:
    *  finishes, hits resource limit, or gets intterupted
    */
@@ -3427,9 +3454,14 @@ class CVC4_PUBLIC Solver
   Term objectiveGetUpper(Objective o) const;
 
   /**
+   * Gets statistics on the current optimization state
+   */
+  TermVec getObjectives(void) const;
+
+  /**
    * Sets the resource limit on our solver to prevent infinite recursion
    */
-  void set_resource_limit(int limit) const;
+  void setResourceLimit(int limit) const;
 
   /**
    * interrupts solver, allowing for approximation of objective
