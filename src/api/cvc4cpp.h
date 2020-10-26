@@ -3454,6 +3454,11 @@ class CVC4_PUBLIC Solver
   Term objectiveGetUpper(Objective o) const;
 
   /**
+   * Loads the model associated to the objective
+   */
+  int loadObjectiveModel(Objective o) const;
+
+  /**
    * Gets statistics on the current optimization state
    */
   TermVec getObjectives(void) const;

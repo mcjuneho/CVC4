@@ -5709,6 +5709,8 @@ Term Solver::objectiveGetLower(Objective o) const {}
 
 Term Solver::objectiveGetUpper(Objective o) const {}
 
+int Solver::loadObjectiveModel(Objective o) const {}
+
 TermVec Solver::getObjectives(void) const {
   //not yet implemented, implement with multiobjective optimization
   Assert(false);
