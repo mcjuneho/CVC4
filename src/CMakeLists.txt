@@ -208,6 +208,8 @@ libcvc4_add_sources(
   smt/abstract_values.h
   smt/assertions.cpp
   smt/assertions.h
+  smt/check_models.cpp
+  smt/check_models.h
   smt/command.cpp
   smt/command.h
   smt/defined_function.h
@@ -285,6 +287,8 @@ libcvc4_add_sources(
   theory/arith/arith_lemma.h
   theory/arith/arith_msum.cpp
   theory/arith/arith_msum.h
+  theory/arith/arith_preprocess.cpp
+  theory/arith/arith_preprocess.h
   theory/arith/arith_rewriter.cpp
   theory/arith/arith_rewriter.h
   theory/arith/arith_state.cpp
@@ -341,6 +345,22 @@ libcvc4_add_sources(
   theory/arith/nl/cad/projections.h
   theory/arith/nl/cad/variable_ordering.cpp
   theory/arith/nl/cad/variable_ordering.h
+  theory/arith/nl/ext/constraint.cpp
+  theory/arith/nl/ext/constraint.h
+  theory/arith/nl/ext/factoring_check.cpp
+  theory/arith/nl/ext/factoring_check.h
+  theory/arith/nl/ext/monomial.cpp
+  theory/arith/nl/ext/monomial.h
+  theory/arith/nl/ext/monomial_bounds_check.cpp
+  theory/arith/nl/ext/monomial_bounds_check.h
+  theory/arith/nl/ext/monomial_check.cpp
+  theory/arith/nl/ext/monomial_check.h
+  theory/arith/nl/ext/ext_state.cpp
+  theory/arith/nl/ext/ext_state.h
+  theory/arith/nl/ext/split_zero_check.cpp
+  theory/arith/nl/ext/split_zero_check.h
+  theory/arith/nl/ext/tangent_plane_check.cpp
+  theory/arith/nl/ext/tangent_plane_check.h
   theory/arith/nl/ext_theory_callback.cpp
   theory/arith/nl/ext_theory_callback.h
   theory/arith/nl/iand_solver.cpp
@@ -353,16 +373,12 @@ libcvc4_add_sources(
   theory/arith/nl/icp/icp_solver.h
   theory/arith/nl/icp/intersection.cpp
   theory/arith/nl/icp/intersection.h
-  theory/arith/nl/nl_constraint.cpp
-  theory/arith/nl/nl_constraint.h
+  theory/arith/nl/iand_table.cpp
+  theory/arith/nl/iand_table.h
   theory/arith/nl/nl_lemma_utils.cpp
   theory/arith/nl/nl_lemma_utils.h
   theory/arith/nl/nl_model.cpp
   theory/arith/nl/nl_model.h
-  theory/arith/nl/nl_monomial.cpp
-  theory/arith/nl/nl_monomial.h
-  theory/arith/nl/nl_solver.cpp
-  theory/arith/nl/nl_solver.h
   theory/arith/nl/nonlinear_extension.cpp
   theory/arith/nl/nonlinear_extension.h
   theory/arith/nl/poly_conversion.cpp
@@ -381,6 +397,9 @@ libcvc4_add_sources(
   theory/arith/partial_model.h
   theory/arith/proof_checker.cpp
   theory/arith/proof_checker.h
+  theory/arith/proof_macros.h
+  theory/arith/rewrites.cpp
+  theory/arith/rewrites.h
   theory/arith/simplex.cpp
   theory/arith/simplex.h
   theory/arith/simplex_update.cpp
@@ -395,11 +414,12 @@ libcvc4_add_sources(
   theory/arith/theory_arith.h
   theory/arith/theory_arith_private.cpp
   theory/arith/theory_arith_private.h
-  theory/arith/theory_arith_private_forward.h
   theory/arith/theory_arith_type_rules.h
   theory/arith/type_enumerator.h
   theory/arrays/array_info.cpp
   theory/arrays/array_info.h
+  theory/arrays/inference_manager.cpp
+  theory/arrays/inference_manager.h
   theory/arrays/proof_checker.cpp
   theory/arrays/proof_checker.h
   theory/arrays/skolem_cache.cpp
@@ -422,6 +442,8 @@ libcvc4_add_sources(
   theory/bags/bags_statistics.h
   theory/bags/inference_manager.cpp
   theory/bags/inference_manager.h
+  theory/bags/make_bag_op.cpp
+  theory/bags/make_bag_op.h
   theory/bags/normal_form.cpp
   theory/bags/normal_form.h
   theory/bags/rewrites.cpp
@@ -437,6 +459,8 @@ libcvc4_add_sources(
   theory/bags/theory_bags_type_rules.h
   theory/booleans/circuit_propagator.cpp
   theory/booleans/circuit_propagator.h
+  theory/booleans/proof_circuit_propagator.cpp
+  theory/booleans/proof_circuit_propagator.h
   theory/booleans/proof_checker.cpp
   theory/booleans/proof_checker.h
   theory/booleans/theory_bool.cpp
@@ -451,6 +475,7 @@ libcvc4_add_sources(
   theory/builtin/theory_builtin.h
   theory/builtin/theory_builtin_rewriter.cpp
   theory/builtin/theory_builtin_rewriter.h
+  theory/builtin/theory_builtin_type_rules.cpp
   theory/builtin/theory_builtin_type_rules.h
   theory/builtin/type_enumerator.cpp
   theory/builtin/type_enumerator.h
@@ -508,6 +533,8 @@ libcvc4_add_sources(
   theory/combination_engine.h
   theory/datatypes/datatypes_rewriter.cpp
   theory/datatypes/datatypes_rewriter.h
+  theory/datatypes/inference.cpp
+  theory/datatypes/inference.h
   theory/datatypes/inference_manager.cpp
   theory/datatypes/inference_manager.h
   theory/datatypes/sygus_datatype_utils.cpp
@@ -717,6 +744,8 @@ libcvc4_add_sources(
   theory/quantifiers/sygus/sygus_pbe.h
   theory/quantifiers/sygus/sygus_process_conj.cpp
   theory/quantifiers/sygus/sygus_process_conj.h
+  theory/quantifiers/sygus/sygus_qe_preproc.cpp
+  theory/quantifiers/sygus/sygus_qe_preproc.h
   theory/quantifiers/sygus/sygus_repair_const.cpp
   theory/quantifiers/sygus/sygus_repair_const.h
   theory/quantifiers/sygus/sygus_stats.cpp
@@ -733,6 +762,8 @@ libcvc4_add_sources(
   theory/quantifiers/sygus/synth_conjecture.h
   theory/quantifiers/sygus/synth_engine.cpp
   theory/quantifiers/sygus/synth_engine.h
+  theory/quantifiers/sygus/template_infer.cpp
+  theory/quantifiers/sygus/template_infer.h
   theory/quantifiers/sygus/term_database_sygus.cpp
   theory/quantifiers/sygus/term_database_sygus.h
   theory/quantifiers/sygus/type_info.cpp
@@ -772,6 +803,8 @@ libcvc4_add_sources(
   theory/sets/inference_manager.h
   theory/sets/normal_form.h
   theory/sets/rels_utils.h
+  theory/sets/singleton_op.cpp
+  theory/sets/singleton_op.h
   theory/sets/skolem_cache.cpp
   theory/sets/skolem_cache.h
   theory/sets/solver_state.cpp
@@ -811,6 +844,8 @@ libcvc4_add_sources(
   theory/strings/eqc_info.h
   theory/strings/infer_info.cpp
   theory/strings/infer_info.h
+  theory/strings/infer_proof_cons.cpp
+  theory/strings/infer_proof_cons.h
   theory/strings/inference_manager.cpp
   theory/strings/inference_manager.h
   theory/strings/normal_form.cpp
@@ -891,6 +926,8 @@ libcvc4_add_sources(
   theory/theory_test_utils.h
   theory/trust_node.cpp
   theory/trust_node.h
+  theory/trust_substitutions.cpp
+  theory/trust_substitutions.h
   theory/type_enumerator.h
   theory/type_set.cpp
   theory/type_set.h
@@ -1091,6 +1128,7 @@ install(FILES
           expr/expr_iomanip.h
           expr/record.h
           expr/sequence.h
+          expr/symbol_manager.h
           expr/symbol_table.h
           expr/type.h
           expr/uninterpreted_constant.h
