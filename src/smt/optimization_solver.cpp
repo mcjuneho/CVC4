@@ -46,6 +46,7 @@ bool OptimizationSolver::checkOpt(Result& r){
     r = optChecker->checkSat();
 
     return true;
+    
 }
 
 }  // namespace smt
