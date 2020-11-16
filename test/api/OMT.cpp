@@ -14,5 +14,7 @@ int main()
     Term bound = slv.mkBitVector(8, 4);
     Term equal = slv.mkTerm(Kind::EQUAL, cost, bound);
     slv.assertFormula(equal);
+    Objective o = slv.makeMaxObjective(cost);
+    slv.activateObjective(o);
     std::cout<< slv.checkAndOpt() << std::endl;
 }

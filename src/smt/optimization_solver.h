@@ -37,15 +37,53 @@ namespace smt {
  */
 class OptimizationSolver
 {
+  enum CVC4_PUBLIC OptResult 
+  {
+    OPT_UNKNOWN, 
+    OPT_UNSAT, 
+    OPT_SAT_PARTIAL, 
+    OPT_SAT_APPROX, 
+    OPT_OPTIMAL 
+  };
+
+  enum CVC4_PUBLIC ObjectiveType 
+  {
+    OBJECTIVE_MINIMIZE, 
+    OBJECTIVE_MAXIMIZE
+  };
+
+  enum CVC4_PUBLIC ObjectiveValue
+  {
+    OPTIMUM,
+    FINAL_LOWER,
+    FINAL_UPPER,
+    FINAL_ERROR
+  };
+
+  class Objective
+  {
+    public:
+    Objective(Node n, ObjectiveType type, OptResult result);
+    //~Objective();
+
+    private:
+    ObjectiveType d_type;
+    OptResult d_result;
+    Node d_node;
+  };
+  
  public:
   OptimizationSolver(SmtEngine* parent);
   ~OptimizationSolver();
 
   bool checkOpt(Result& r);
+  void activateObj(const Node& obj, const int& type, const int& result);
 
  private:
-  /** The parent SMT engine */
+  /** The parent SMT engine **/
   SmtEngine* d_parent;
+  /** The objectives to optimize for **/
+  std::vector<Objective> d_activatedObjectives;
 };
 
 }  // namespace smt

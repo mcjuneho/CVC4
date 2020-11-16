@@ -2204,7 +2204,7 @@ class CVC4_PUBLIC Objective
   ObjectiveType getObjectiveType() {return d_type;}
   OptResult getOptResult() {return d_result;}
   Term getTerm() {return d_term;}
-  Objective(Term t, ObjectiveType d_type);
+  Objective(Term t, ObjectiveType type);
   //~Objective();
 
   private:

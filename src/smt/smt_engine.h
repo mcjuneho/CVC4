@@ -671,6 +671,8 @@ class CVC4_PUBLIC SmtEngine
 
   Result checkOpt(/*Result& r*/);
 
+  void activateObj(const Node& obj, const int& type, const int& result);
+
   /**
    * This method asks this SMT engine to find an abduct with respect to the
    * current assertion stack (call it A) and the conjecture (call it B).

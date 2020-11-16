@@ -43,10 +43,23 @@ bool OptimizationSolver::checkOpt(Result& r){
     }
     
     //while()
+    /*for (Objective o: d_activatedObjectives){
+        optChecker->makeTerm()
+    }*/
     r = optChecker->checkSat();
 
     return true;
-    
+
+}
+
+void OptimizationSolver::activateObj(const Node& obj, const int& type, const int& result){
+    Objective o = Objective(obj, (ObjectiveType)type, (OptResult)result);
+    d_activatedObjectives.push_back(o);
+}
+
+OptimizationSolver::Objective::Objective(Node obj, ObjectiveType type, OptResult result)
+    : d_type(type), d_result(OPT_UNKNOWN), d_node(obj)
+{
 }
 
 }  // namespace smt

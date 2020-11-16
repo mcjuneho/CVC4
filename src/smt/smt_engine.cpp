@@ -1653,6 +1653,12 @@ Result SmtEngine::checkOpt(/*Result& r*/){
   return r;
 }
 
+void SmtEngine::activateObj(const Node& obj, const int& type, const int& result){
+  SmtScope smts(this);
+  finishInit();
+  d_optSolver->activateObj(obj, type, result);
+}
+
 bool SmtEngine::getAbduct(const Node& conj,
                           const TypeNode& grammarType,
                           Node& abd)

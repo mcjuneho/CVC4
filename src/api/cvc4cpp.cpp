@@ -5811,7 +5811,10 @@ Objective Solver::makeMaxObjective(Term t) const {return Objective(t, OBJECTIVE_
 
 //Objective Solver::assertSoft(Term t, Term w) const {}
 
-void Solver::activateObjective(Objective o) const {}
+void Solver::activateObjective(Objective o) const {
+  CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));
+  d_smtEngine->activateObj(*o.getTerm().d_node, o.getObjectiveType(), o.getOptResult());
+}
 
 /*Optresult*/Result Solver::checkAndOpt() const {
   CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));  //why do we need this
