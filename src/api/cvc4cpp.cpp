@@ -5793,6 +5793,74 @@ SmtEngine* Solver::getSmtEngine(void) const { return d_smtEngine.get(); }
 Options& Solver::getOptions(void) { return d_smtEngine->getOptions(); }
 
 /* -------------------------------------------------------------------------- */
+/* Optimization                                                               */
+/* -------------------------------------------------------------------------- */
+
+Objective::Objective(Term t, ObjectiveType type)
+    : d_type(type), d_result(OPT_UNKNOWN), d_term(t)
+{
+}
+
+Objective Solver::makeMinObjective(Term t) const {return Objective(t, OBJECTIVE_MINIMIZE);}
+
+Objective Solver::makeMaxObjective(Term t) const {return Objective(t, OBJECTIVE_MAXIMIZE);}
+
+//Objective Solver::makeMinMax(const std::vector<Term>& terms) const {}
+
+//Objective Solver::makeMaxMin(const std::vector<Term>& terms) const {}
+
+//Objective Solver::assertSoft(Term t, Term w) const {}
+
+void Solver::activateObjective(Objective o) const {
+  CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));
+  d_smtEngine->activateObj(*o.getTerm().d_node, o.getObjectiveType(), o.getOptResult());
+}
+
+/*Optresult*/Result Solver::checkAndOpt() const {
+  CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));  //why do we need this
+  //Result r;                                        //should be OptResult but smtEngine needs nodes
+
+  /*bool success = */return d_smtEngine->checkOpt();
+
+  /*if (success){
+    return result;
+  }
+  else{
+    //some error checking here
+  }*/
+  //return r;
+}
+
+//ObjectiveType Solver::objectiveGetType(Objective o) const {return o.getObjectiveType();}
+
+//OptResult Solver::objectiveGetResult(Objective o) const {return o.getOptResult();}
+
+//Term Solver::objectiveGetTerm(Objective o) const {return o.getTerm();}
+
+//Term Solver::objectiveGetLower(Objective o) const {}
+
+//Term Solver::objectiveGetUpper(Objective o) const {}
+
+//int Solver::loadObjectiveModel(Objective o) const {}
+
+/*TermVec Solver::getObjectives(void) const {
+  //not yet implemented, implement with multiobjective optimization
+  Assert(false);
+}
+
+//Term Solver::objectiveGetValue(Objective o, ObjectiveValue v) const {}
+
+void Solver::setResourceLimit(int limit) const {
+  //not yet implemented, implement with base and bound 
+  Assert(false);
+}
+
+void Solver::interrupt(void) const {
+  //not yet implemented, implement with base and bound
+  Assert(false);
+}*/
+
+/* -------------------------------------------------------------------------- */
 /* Conversions                                                                */
 /* -------------------------------------------------------------------------- */
 

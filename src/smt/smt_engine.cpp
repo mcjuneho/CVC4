@@ -14,6 +14,8 @@
  ** The main entry point into the CVC4 library's SMT interface.
  **/
 
+#include <iostream> //NEEDS TO BE REMOVED AFTER TESTING
+
 #include "smt/smt_engine.h"
 
 #include "api/cvc4cpp.h"
@@ -46,6 +48,7 @@
 #include "smt/dump_manager.h"
 #include "smt/expr_names.h"
 #include "smt/interpolation_solver.h"
+#include "smt/optimization_solver.h"
 #include "smt/listeners.h"
 #include "smt/logic_request.h"
 #include "smt/model_blocker.h"
@@ -102,6 +105,7 @@ SmtEngine::SmtEngine(ExprManager* em, Options* optr)
       d_abductSolver(nullptr),
       d_interpolSolver(nullptr),
       d_quantElimSolver(nullptr),
+      d_optSolver(nullptr),
       d_assignments(nullptr),
       d_logic(),
       d_originalOptions(),
@@ -153,6 +157,8 @@ SmtEngine::SmtEngine(ExprManager* em, Options* optr)
       new SygusSolver(*d_smtSolver, *d_pp, getUserContext(), d_outMgr));
   // make the quantifier elimination solver
   d_quantElimSolver.reset(new QuantElimSolver(*d_smtSolver));
+  // make the optimization solver *** TEMPORARY *** NEEDS TO BE MOVED TO OPTIONS ***
+  //d_optSolver.reset(new OptimizationSolver(*this));
 
   // The ProofManager is constructed before any other proof objects such as
   // SatProof and TheoryProofs. The TheoryProofEngine and the SatProof are
@@ -287,6 +293,8 @@ void SmtEngine::finishInit()
   {
     d_interpolSolver.reset(new InterpolationSolver(this));
   }
+  //optimization subsolver **needs to be moved into option**
+  d_optSolver.reset(new OptimizationSolver(this));
 
   d_pp->finishInit();
 
@@ -1633,6 +1641,22 @@ bool SmtEngine::getInterpol(const Node& conj, Node& interpol)
 {
   TypeNode grammarType;
   return getInterpol(conj, grammarType, interpol);
+}
+
+Result SmtEngine::checkOpt(/*Result& r*/){
+  SmtScope smts(this);
+  finishInit();
+  Result r;
+  cout<<"Succesfully got to SMT ENGINE"<<endl;
+  bool success = d_optSolver->checkOpt(r);
+  cout<<"Succesfully finished call to OPT SOLVER"<<endl;
+  return r;
+}
+
+void SmtEngine::activateObj(const Node& obj, const int& type, const int& result){
+  SmtScope smts(this);
+  finishInit();
+  d_optSolver->activateObj(obj, type, result);
 }
 
 bool SmtEngine::getAbduct(const Node& conj,
