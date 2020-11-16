@@ -3495,32 +3495,37 @@ class CVC4_PUBLIC Solver
   /**
    * Creates an objective of type minimize. Returned to user.
    */
-  Objective makeMinimize(Term t) const;
+  Objective makeMinObjective(Term t) const;
 
   /**
    * Creates an objective of type maximize. Returned to user.
    */
-  Objective makeMaximize(Term t) const;
+  Objective makeMaxObjective(Term t) const;
 
   /**
    * Creates an objective of type min(max t1, max t2). Returned to user.
    */
-  Objective makeMinMax(const std::vector<Term>& terms) const;
+  //Objective makeMinMax(const std::vector<Term>& terms) const;
 
   /**
    * Creates an objective of type max(min t1, min t2). Returned to user.
    */
-  Objective makeMaxMin(const std::vector<Term>& terms) const;
+  //Objective makeMaxMin(const std::vector<Term>& terms) const;
 
   /**
    * Makes and asserts a soft assertion with weight w
    */
-  Objective assertSoft(Term t, Term w) const;
+  //Objective assertSoft(Term t, Term w) const;
 
   /**
    * Asserts the objective to make the solver optimize it
    **/
-  void assertObjective(Objective o) const;
+  void activateObjective(Objective o) const;
+
+  /**
+   * Runs checksat and optimizes over the currently activated objectives
+   */
+  Result checkAndOpt() const;
 
   /**
    * Gets the value of the objectives:
@@ -3534,49 +3539,49 @@ class CVC4_PUBLIC Solver
   /**
    * Asserts the objective to make the solver optimize it
    **/
-  ObjectiveType objectiveGetType(Objective o) const;
+  //ObjectiveType objectiveGetType(Objective o) const;
 
   /**
    * Asserts the objective to make the solver optimize it
    **/
-  OptResult objectiveGetResult(Objective o) const;
+  //OptResult objectiveGetResult(Objective o) const;
 
   /**
    * Get the term related to an objective
    */
-  Term objectiveGetTerm(Objective o) const;
+  //Term objectiveGetTerm(Objective o) const;
 
   /**
    * Gets the lower bound on objective after solver:
    *  finishes, hits resource limit, or gets intterupted
    */
-  Term objectiveGetLower(Objective o) const;
+  //Term objectiveGetLower(Objective o) const;
 
   /**
    * Gets the upper bound on objective after solver:
    *  finishes, hits resource limit, or gets intterupted
    */
-  Term objectiveGetUpper(Objective o) const;
+  //Term objectiveGetUpper(Objective o) const;
 
   /**
    * Loads the model associated to the objective
    */
-  int loadObjectiveModel(Objective o) const;
+  //int loadObjectiveModel(Objective o) const;
 
   /**
    * Gets statistics on the current optimization state
    */
-  TermVec getObjectives(void) const;
+  //TermVec getObjectives(void) const;
 
   /**
    * Sets the resource limit on our solver to prevent infinite recursion
    */
-  void setResourceLimit(int limit) const;
+  //void setResourceLimit(int limit) const;
 
   /**
    * interrupts solver, allowing for approximation of objective
    */
-  void interrupt(void) const;
+  //void interrupt(void) const;
 
  private:
   /* Helper to convert a vector of internal types to sorts. */
