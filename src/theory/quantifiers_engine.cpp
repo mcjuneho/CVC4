@@ -30,7 +30,8 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace theory {
 
-QuantifiersEngine::QuantifiersEngine(TheoryEngine* te, DecisionManager& dm,
+QuantifiersEngine::QuantifiersEngine(TheoryEngine* te,
+                                     DecisionManager& dm,
                                      ProofNodeManager* pnm)
     : d_te(te),
       d_context(te->getSatContext()),
@@ -49,7 +50,7 @@ QuantifiersEngine::QuantifiersEngine(TheoryEngine* te, DecisionManager& dm,
       d_sygus_tdb(nullptr),
       d_quant_attr(new quantifiers::QuantAttributes(this)),
       d_instantiate(new quantifiers::Instantiate(this, d_userContext, pnm)),
-      d_skolemize(new quantifiers::Skolemize(this, d_userContext)),
+      d_skolemize(new quantifiers::Skolemize(this, d_userContext, pnm)),
       d_term_enum(new quantifiers::TermEnumeration),
       d_conflict_c(d_context, false),
       d_quants_prereg(d_userContext),
@@ -369,6 +370,14 @@ void QuantifiersEngine::ppNotifyAssertions(
     {
       sye->preregisterAssertion(a);
     }
+  }
+  /* The SyGuS instantiation module needs a global view of all available
+   * assertions to collect global terms that get added to each grammar.
+   */
+  if (options::sygusInst())
+  {
+    quantifiers::SygusInst* si = d_qmodules->d_sygus_inst.get();
+    si->ppNotifyAssertions(assertions);
   }
 }
 
@@ -801,16 +810,16 @@ void QuantifiersEngine::assertQuantifier( Node f, bool pol ){
   }
   if( !pol ){
     // do skolemization
-    Node lem = d_skolemize->process(f);
+    TrustNode lem = d_skolemize->process(f);
     if (!lem.isNull())
     {
       if (Trace.isOn("quantifiers-sk-debug"))
       {
-        Node slem = Rewriter::rewrite(lem);
+        Node slem = Rewriter::rewrite(lem.getNode());
         Trace("quantifiers-sk-debug")
             << "Skolemize lemma : " << slem << std::endl;
       }
-      getOutputChannel().lemma(
+      getOutputChannel().trustedLemma(
           lem, LemmaProperty::PREPROCESS | LemmaProperty::NEEDS_JUSTIFY);
     }
     return;
@@ -976,8 +985,11 @@ void QuantifiersEngine::flushLemmas(){
     //take default output channel if none is provided
     d_hasAddedLemma = true;
     std::map<Node, ProofGenerator*>::iterator itp;
-    for (const Node& lemw : d_lemmas_waiting)
+    // Note: Do not use foreach loop here and do not cache size() call.
+    // New lemmas can be added while iterating over d_lemmas_waiting.
+    for (size_t i = 0; i < d_lemmas_waiting.size(); ++i)
     {
+      const Node& lemw = d_lemmas_waiting[i];
       Trace("qe-lemma") << "Lemma : " << lemw << std::endl;
       itp = d_lemmasWaitingPg.find(lemw);
       if (itp != d_lemmasWaitingPg.end())

@@ -29,7 +29,6 @@
 #include "expr/expr.h"
 #include "expr/expr_manager.h"
 #include "options/options.h"
-#include "proof/unsat_core.h"
 #include "smt/logic_exception.h"
 #include "smt/output_manager.h"
 #include "smt/smt_mode.h"
@@ -59,8 +58,8 @@ class DecisionEngine;
 class TheoryEngine;
 
 class ProofManager;
+class UnsatCore;
 
-class Model;
 class LogicRequest;
 class StatisticsRegistry;
 
@@ -95,6 +94,7 @@ namespace prop {
 
 namespace smt {
 /** Utilities */
+class Model;
 class SmtEngineState;
 class AbstractValues;
 class Assertions;
@@ -104,12 +104,14 @@ class ResourceOutListener;
 class SmtNodeManagerListener;
 class OptionsManager;
 class Preprocessor;
+class CheckModels;
 /** Subsolvers */
 class SmtSolver;
 class SygusSolver;
 class AbductionSolver;
 class InterpolationSolver;
 class QuantElimSolver;
+class OptimizationSolver;
 /**
  * Representation of a defined function.  We keep these around in
  * SmtEngine to permit expanding definitions late (and lazily), to
@@ -280,7 +282,7 @@ class CVC4_PUBLIC SmtEngine
    * Get the model (only if immediately preceded by a SAT or NOT_ENTAILED
    * query).  Only permitted if produce-models is on.
    */
-  Model* getModel();
+  smt::Model* getModel();
 
   /**
    * Block the current model. Can be called only if immediately preceded by
@@ -306,13 +308,30 @@ class CVC4_PUBLIC SmtEngine
    *
    * The return value has the same meaning as that of assertFormula.
    */
-  Result blockModelValues(const std::vector<Expr>& exprs);
+  Result blockModelValues(const std::vector<Node>& exprs);
+
+  /**
+   * Declare heap. For smt2 inputs, this is called when the command
+   * (declare-heap (locT datat)) is invoked by the user. This sets locT as the
+   * location type and dataT is the data type for the heap. This command should
+   * be executed only once, and must be invoked before solving separation logic
+   * inputs.
+   */
+  void declareSepHeap(TypeNode locT, TypeNode dataT);
+
+  /**
+   * Get the separation heap types, which extracts which types were passed to
+   * the method above.
+   *
+   * @return true if the separation logic heap types have been declared.
+   */
+  bool getSepHeapTypes(TypeNode& locT, TypeNode& dataT);
 
   /** When using separation logic, obtain the expression for the heap.  */
-  Expr getSepHeapExpr();
+  Node getSepHeapExpr();
 
   /** When using separation logic, obtain the expression for nil.  */
-  Expr getSepNilExpr();
+  Node getSepNilExpr();
 
   /**
    * Get an aspect of the current SMT execution environment.
@@ -333,13 +352,13 @@ class CVC4_PUBLIC SmtEngine
    * @param global True if this definition is global (i.e. should persist when
    *               popping the user context)
    */
-  void defineFunction(Expr func,
-                      const std::vector<Expr>& formals,
-                      Expr formula,
+  void defineFunction(Node func,
+                      const std::vector<Node>& formals,
+                      Node formula,
                       bool global = false);
 
   /** Return true if given expression is a defined function. */
-  bool isDefinedFunction(Expr func);
+  bool isDefinedFunction(Node func);
 
   /**
    * Define functions recursive
@@ -359,17 +378,17 @@ class CVC4_PUBLIC SmtEngine
    * @param global True if this definition is global (i.e. should persist when
    *               popping the user context)
    */
-  void defineFunctionsRec(const std::vector<Expr>& funcs,
-                          const std::vector<std::vector<Expr>>& formals,
-                          const std::vector<Expr>& formulas,
+  void defineFunctionsRec(const std::vector<Node>& funcs,
+                          const std::vector<std::vector<Node>>& formals,
+                          const std::vector<Node>& formulas,
                           bool global = false);
   /**
    * Define function recursive
    * Same as above, but for a single function.
    */
-  void defineFunctionRec(Expr func,
-                         const std::vector<Expr>& formals,
-                         Expr formula,
+  void defineFunctionRec(Node func,
+                         const std::vector<Node>& formals,
+                         Node formula,
                          bool global = false);
   /**
    * Add a formula to the current context: preprocess, do per-theory
@@ -391,9 +410,8 @@ class CVC4_PUBLIC SmtEngine
    *
    * @throw Exception
    */
-  Result checkEntailed(const Expr& assumption = Expr(),
-                       bool inUnsatCore = true);
-  Result checkEntailed(const std::vector<Expr>& assumptions,
+  Result checkEntailed(const Node& assumption, bool inUnsatCore = true);
+  Result checkEntailed(const std::vector<Node>& assumptions,
                        bool inUnsatCore = true);
 
   /**
@@ -402,8 +420,9 @@ class CVC4_PUBLIC SmtEngine
    *
    * @throw Exception
    */
-  Result checkSat(const Expr& assumption = Expr(), bool inUnsatCore = true);
-  Result checkSat(const std::vector<Expr>& assumptions,
+  Result checkSat();
+  Result checkSat(const Node& assumption, bool inUnsatCore = true);
+  Result checkSat(const std::vector<Node>& assumptions,
                   bool inUnsatCore = true);
 
   /**
@@ -528,7 +547,7 @@ class CVC4_PUBLIC SmtEngine
   /**
    * Same as getValue but for a vector of expressions
    */
-  std::vector<Expr> getValues(const std::vector<Expr>& exprs);
+  std::vector<Node> getValues(const std::vector<Node>& exprs);
 
   /**
    * Add a function to the set of expressions whose value is to be
@@ -646,6 +665,17 @@ class CVC4_PUBLIC SmtEngine
   bool getInterpol(const Node& conj, Node& interpol);
 
   /**
+   * This method asks this SMT engine to optimize any asserted objectives with
+   * respect to the current assertion stack (call it A)
+   */
+
+  Result checkOpt(/*Result& r*/);
+
+  Node objectiveGetValue(const Node& obj);
+
+  void activateObj(const Node& obj, const int& type, const int& result);
+
+  /**
    * This method asks this SMT engine to find an abduct with respect to the
    * current assertion stack (call it A) and the conjecture (call it B).
    * If this method returns true, then abd is set to a formula C such that
@@ -666,7 +696,7 @@ class CVC4_PUBLIC SmtEngine
    * Get list of quantified formulas that were instantiated on the last call
    * to check-sat.
    */
-  void getInstantiatedQuantifiedFormulas(std::vector<Expr>& qs);
+  void getInstantiatedQuantifiedFormulas(std::vector<Node>& qs);
 
   /**
    * Get instantiations for quantified formula q.
@@ -679,7 +709,7 @@ class CVC4_PUBLIC SmtEngine
    * In particular, if q is of the form forall x. P(x), then insts is a list
    * of formulas of the form P(t1), ..., P(tn).
    */
-  void getInstantiations(Expr q, std::vector<Expr>& insts);
+  void getInstantiations(Node q, std::vector<Node>& insts);
   /**
    * Get instantiation term vectors for quantified formula q.
    *
@@ -689,8 +719,8 @@ class CVC4_PUBLIC SmtEngine
    * Notice that these are not guaranteed to come in the same order as the
    * instantiation lemmas above.
    */
-  void getInstantiationTermVectors(Expr q,
-                                   std::vector<std::vector<Expr> >& tvecs);
+  void getInstantiationTermVectors(Node q,
+                                   std::vector<std::vector<Node>>& tvecs);
 
   /**
    * Get an unsatisfiable core (only if immediately preceded by an UNSAT or
@@ -703,7 +733,7 @@ class CVC4_PUBLIC SmtEngine
    * Get the current set of assertions.  Only permitted if the
    * SmtEngine is set to operate interactively.
    */
-  std::vector<Expr> getAssertions();
+  std::vector<Node> getAssertions();
 
   /**
    * Push a user-level context.
@@ -879,7 +909,7 @@ class CVC4_PUBLIC SmtEngine
    *
    * Return the set of assertions, after expanding definitions.
    */
-  std::vector<Expr> getExpandedAssertions();
+  std::vector<Node> getExpandedAssertions();
   /* .......................................................................  */
  private:
   /* .......................................................................  */
@@ -949,8 +979,8 @@ class CVC4_PUBLIC SmtEngine
    * the interpolation problem (interpol), and the solution implies the goal
    * (conj). If these criteria are not met, an internal error is thrown.
    */
-  void checkInterpol(Expr interpol,
-                     const std::vector<Expr>& easserts,
+  void checkInterpol(Node interpol,
+                     const std::vector<Node>& easserts,
                      const Node& conj);
 
   /**
@@ -969,16 +999,17 @@ class CVC4_PUBLIC SmtEngine
   Result quickCheck();
 
   /**
-   * Get the model, if it is available and return a pointer to it
+   * Get the (SMT-level) model pointer, if we are in SAT mode. Otherwise,
+   * return nullptr.
    *
-   * This ensures that the model is currently available, which means that
-   * CVC4 is producing models, and is in "SAT mode", otherwise an exception
-   * is thrown.
+   * This ensures that the underlying theory model of the SmtSolver maintained
+   * by this class is currently available, which means that CVC4 is producing
+   * models, and is in "SAT mode", otherwise a recoverable exception is thrown.
    *
    * The flag c is used for giving an error message to indicate the context
    * this method was called.
    */
-  theory::TheoryModel* getAvailableModel(const char* c) const;
+  smt::Model* getAvailableModel(const char* c) const;
 
   // --------------------------------------- callbacks from the state
   /**
@@ -1037,23 +1068,23 @@ class CVC4_PUBLIC SmtEngine
    * the function that the formal argument list is for. This method is used
    * as a helper function when defining (recursive) functions.
    */
-  void debugCheckFormals(const std::vector<Expr>& formals, Expr func);
+  void debugCheckFormals(const std::vector<Node>& formals, Node func);
 
   /**
    * Checks whether formula is a valid function body for func whose formal
    * argument list is stored in formals. This method is
    * used as a helper function when defining (recursive) functions.
    */
-  void debugCheckFunctionBody(Expr formula,
-                              const std::vector<Expr>& formals,
-                              Expr func);
+  void debugCheckFunctionBody(Node formula,
+                              const std::vector<Node>& formals,
+                              Node func);
 
   /**
    * Helper method to obtain both the heap and nil from the solver. Returns a
    * std::pair where the first element is the heap expression and the second
    * element is the nil expression.
    */
-  std::pair<Expr, Expr> getSepHeapAndNilExpr();
+  std::pair<Node, Node> getSepHeapAndNilExpr();
 
   /* Members -------------------------------------------------------------- */
 
@@ -1088,6 +1119,17 @@ class CVC4_PUBLIC SmtEngine
 
   /** The (old) proof manager TODO (project #37): delete this */
   std::unique_ptr<ProofManager> d_proofManager;
+  /**
+   * The SMT-level model object, which contains information about how to
+   * print the model, as well as a pointer to the underlying TheoryModel
+   * implementation maintained by the SmtSolver.
+   */
+  std::unique_ptr<smt::Model> d_model;
+
+  /**
+   * The utility used for checking models
+   */
+  std::unique_ptr<smt::CheckModels> d_checkModels;
 
   /**
    * The proof manager, which manages all things related to checking,
@@ -1115,6 +1157,8 @@ class CVC4_PUBLIC SmtEngine
   std::unique_ptr<smt::InterpolationSolver> d_interpolSolver;
   /** The solver for quantifier elimination queries */
   std::unique_ptr<smt::QuantElimSolver> d_quantElimSolver;
+  /** The solver for optimization (OMT) */
+  std::unique_ptr<smt::OptimizationSolver> d_optSolver;
   /**
    * List of items for which to retrieve values using getAssignment().
    */
