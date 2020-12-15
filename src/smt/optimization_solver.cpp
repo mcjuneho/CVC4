@@ -44,35 +44,38 @@ bool OptimizationSolver::checkOpt(Result& r){
     }
     
     //while()
-    NodeManager *nm = optChecker->getNodeManager();
-    ExprManager *em = optChecker->getExprManager();
+    NodeManager* nm = optChecker->getNodeManager();
+    ExprManager* em = optChecker->getExprManager();
 
+    for (int i = 0; i < d_activatedObjectives.size(); i++)
+    {
+      Objective o = d_activatedObjectives[i];
+      // CVC4::Kind k = o.d_node.getKind();
 
-    for (int i = 0; i < d_activatedObjectives.size(); i++){
-        Objective o = d_activatedObjectives[i];
-        //CVC4::Kind k = o.d_node.getKind();
+      r = optChecker->checkSat();
 
-        r = optChecker->checkSat();
+      // optChecker->push();
 
-        //optChecker->push();
-
-        while(r.isSat()){
-            Node value = optChecker->getValue(o.d_node);
-            o.d_savedValue = value;
-            Node increment;
-            if(o.d_type == OBJECTIVE_MAXIMIZE){
-                increment = nm->mkNode(kind::GT, o.d_node, value);
-            }
-            else{
-                increment = nm->mkNode(kind::LT, o.d_node, value);
-            }
-            optChecker->assertFormula(increment);
-            r = optChecker->checkSat();
+      while (r.isSat())
+      {
+        Node value = optChecker->getValue(o.d_node);
+        o.d_savedValue = value;
+        Node increment;
+        if (o.d_type == OBJECTIVE_MAXIMIZE)
+        {
+          increment = nm->mkNode(kind::GT, o.d_node, value);
         }
+        else
+        {
+          increment = nm->mkNode(kind::LT, o.d_node, value);
+        }
+        optChecker->assertFormula(increment);
+        r = optChecker->checkSat();
+      }
 
-        d_activatedObjectives[i] = o;
+      d_activatedObjectives[i] = o;
 
-        //optChecker->pop();
+      // optChecker->pop();
     }
 
     return true;
@@ -84,17 +87,22 @@ void OptimizationSolver::activateObj(const Node& obj, const int& type, const int
     d_activatedObjectives.push_back(o);
 }
 
-OptimizationSolver::Objective::Objective(Node obj, ObjectiveType type, OptResult result)
+OptimizationSolver::Objective::Objective(Node obj,
+                                         ObjectiveType type,
+                                         OptResult result)
     : d_type(type), d_result(OPT_UNKNOWN), d_node(obj), d_savedValue(obj)
 {
 }
 
-Node OptimizationSolver::objectiveGetValue(const Node& obj){
-    for(Objective o: d_activatedObjectives){
-        if(o.d_node == obj){
-            return o.d_savedValue;
-        }
+Node OptimizationSolver::objectiveGetValue(const Node& obj)
+{
+  for (Objective o : d_activatedObjectives)
+  {
+    if (o.d_node == obj)
+    {
+      return o.d_savedValue;
     }
+  }
 }
 
 }  // namespace smt

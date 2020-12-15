@@ -34,9 +34,9 @@
 #include "api/cvc4cpp.h"
 
 #include <cstring>
+#include <iostream>  //NEEDS TO BE REMOVED AFTER TESTING
 #include <regex>
 #include <sstream>
-#include <iostream>   //NEEDS TO BE REMOVED AFTER TESTING
 
 #include "base/check.h"
 #include "base/configuration.h"
@@ -5849,14 +5849,15 @@ void Solver::activateObjective(Objective o) const {
   Assert(false);
 }*/
 
-Term Solver::objectiveGetValue(Objective o/*, ObjectiveValue v*/) const {
+Term Solver::objectiveGetValue(Objective o /*, ObjectiveValue v*/) const
+{
   Node value = d_smtEngine->objectiveGetValue(*o.getTerm().d_node);
-  //std::cout<< "final cost is: " << value <<std::endl;
+  // std::cout<< "final cost is: " << value <<std::endl;
   return Term(this, value);
 }
 
 /*void Solver::setResourceLimit(int limit) const {
-  //not yet implemented, implement with base and bound 
+  //not yet implemented, implement with base and bound
   Assert(false);
 }
 

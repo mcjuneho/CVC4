@@ -1643,16 +1643,17 @@ bool SmtEngine::getInterpol(const Node& conj, Node& interpol)
 }
 
 Result SmtEngine::checkOpt(/*Result& r*/){
-  //SmtScope smts(this);
-  //finishInit();
+  // SmtScope smts(this);
+  // finishInit();
   Result r;
   bool success = d_optSolver->checkOpt(r);
   return r;
 }
 
-Node SmtEngine::objectiveGetValue(const Node& obj){
-  //SmtScope smts(this);
-  //finishInit();
+Node SmtEngine::objectiveGetValue(const Node& obj)
+{
+  // SmtScope smts(this);
+  // finishInit();
   return d_optSolver->objectiveGetValue(obj);
 }
 

@@ -3534,7 +3534,7 @@ class CVC4_PUBLIC Solver
       final upper bound
       final error value
    **/
-  Term objectiveGetValue(Objective o/*, ObjectiveValue v*/) const;
+  Term objectiveGetValue(Objective o /*, ObjectiveValue v*/) const;
 
   /**
    * Asserts the objective to make the solver optimize it
