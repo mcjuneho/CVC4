@@ -671,6 +671,8 @@ class CVC4_PUBLIC SmtEngine
 
   Result checkOpt(/*Result& r*/);
 
+  Node objectiveGetValue(const Node& obj);
+
   void activateObj(const Node& obj, const int& type, const int& result);
 
   /**

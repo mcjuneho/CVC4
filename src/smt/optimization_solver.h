@@ -66,18 +66,20 @@ class OptimizationSolver
     Objective(Node n, ObjectiveType type, OptResult result);
     //~Objective();
 
-    private:
+    /*private:*/
     ObjectiveType d_type;
     OptResult d_result;
     Node d_node;
+    Node d_savedValue;
   };
-  
+
  public:
   OptimizationSolver(SmtEngine* parent);
   ~OptimizationSolver();
 
   bool checkOpt(Result& r);
   void activateObj(const Node& obj, const int& type, const int& result);
+  Node objectiveGetValue(const Node& obj);
 
  private:
   /** The parent SMT engine **/

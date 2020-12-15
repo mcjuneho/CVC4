@@ -14,7 +14,6 @@
  ** The main entry point into the CVC4 library's SMT interface.
  **/
 
-#include <iostream> //NEEDS TO BE REMOVED AFTER TESTING
 
 #include "smt/smt_engine.h"
 
@@ -1644,13 +1643,17 @@ bool SmtEngine::getInterpol(const Node& conj, Node& interpol)
 }
 
 Result SmtEngine::checkOpt(/*Result& r*/){
-  SmtScope smts(this);
-  finishInit();
+  //SmtScope smts(this);
+  //finishInit();
   Result r;
-  cout<<"Succesfully got to SMT ENGINE"<<endl;
   bool success = d_optSolver->checkOpt(r);
-  cout<<"Succesfully finished call to OPT SOLVER"<<endl;
   return r;
+}
+
+Node SmtEngine::objectiveGetValue(const Node& obj){
+  //SmtScope smts(this);
+  //finishInit();
+  return d_optSolver->objectiveGetValue(obj);
 }
 
 void SmtEngine::activateObj(const Node& obj, const int& type, const int& result){

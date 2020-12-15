@@ -36,6 +36,7 @@
 #include <cstring>
 #include <regex>
 #include <sstream>
+#include <iostream>   //NEEDS TO BE REMOVED AFTER TESTING
 
 #include "base/check.h"
 #include "base/configuration.h"
@@ -5846,11 +5847,15 @@ void Solver::activateObjective(Objective o) const {
 /*TermVec Solver::getObjectives(void) const {
   //not yet implemented, implement with multiobjective optimization
   Assert(false);
+}*/
+
+Term Solver::objectiveGetValue(Objective o/*, ObjectiveValue v*/) const {
+  Node value = d_smtEngine->objectiveGetValue(*o.getTerm().d_node);
+  //std::cout<< "final cost is: " << value <<std::endl;
+  return Term(this, value);
 }
 
-//Term Solver::objectiveGetValue(Objective o, ObjectiveValue v) const {}
-
-void Solver::setResourceLimit(int limit) const {
+/*void Solver::setResourceLimit(int limit) const {
   //not yet implemented, implement with base and bound 
   Assert(false);
 }

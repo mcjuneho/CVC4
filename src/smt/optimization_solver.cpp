@@ -18,6 +18,7 @@
 #include "smt/smt_engine.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/smt_engine_subsolver.h"
+//#include <iostream>
 
 using namespace CVC4::theory;
 
@@ -43,10 +44,36 @@ bool OptimizationSolver::checkOpt(Result& r){
     }
     
     //while()
-    /*for (Objective o: d_activatedObjectives){
-        optChecker->makeTerm()
-    }*/
-    r = optChecker->checkSat();
+    NodeManager *nm = optChecker->getNodeManager();
+    ExprManager *em = optChecker->getExprManager();
+
+
+    for (int i = 0; i < d_activatedObjectives.size(); i++){
+        Objective o = d_activatedObjectives[i];
+        //CVC4::Kind k = o.d_node.getKind();
+
+        r = optChecker->checkSat();
+
+        //optChecker->push();
+
+        while(r.isSat()){
+            Node value = optChecker->getValue(o.d_node);
+            o.d_savedValue = value;
+            Node increment;
+            if(o.d_type == OBJECTIVE_MAXIMIZE){
+                increment = nm->mkNode(kind::GT, o.d_node, value);
+            }
+            else{
+                increment = nm->mkNode(kind::LT, o.d_node, value);
+            }
+            optChecker->assertFormula(increment);
+            r = optChecker->checkSat();
+        }
+
+        d_activatedObjectives[i] = o;
+
+        //optChecker->pop();
+    }
 
     return true;
 
@@ -58,8 +85,16 @@ void OptimizationSolver::activateObj(const Node& obj, const int& type, const int
 }
 
 OptimizationSolver::Objective::Objective(Node obj, ObjectiveType type, OptResult result)
-    : d_type(type), d_result(OPT_UNKNOWN), d_node(obj)
+    : d_type(type), d_result(OPT_UNKNOWN), d_node(obj), d_savedValue(obj)
 {
+}
+
+Node OptimizationSolver::objectiveGetValue(const Node& obj){
+    for(Objective o: d_activatedObjectives){
+        if(o.d_node == obj){
+            return o.d_savedValue;
+        }
+    }
 }
 
 }  // namespace smt
