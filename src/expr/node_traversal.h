@@ -17,6 +17,7 @@
 #ifndef CVC4__EXPR__NODE_TRAVERSAL_H
 #define CVC4__EXPR__NODE_TRAVERSAL_H
 
+#include <cstddef>
 #include <functional>
 #include <iterator>
 #include <unordered_map>

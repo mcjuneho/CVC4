@@ -210,7 +210,9 @@ void SubstitutionMap::print(ostream& out) const {
   }
 }
 
-void SubstitutionMap::debugPrint() const { print(CVC4Message.getStream()); }
+void SubstitutionMap::debugPrint() const {
+  print(Message.getStream());
+}
 
 }/* CVC4::theory namespace */
 

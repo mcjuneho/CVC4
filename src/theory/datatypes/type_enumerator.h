@@ -21,6 +21,7 @@
 
 #include "expr/dtype.h"
 #include "expr/kind.h"
+#include "expr/type.h"
 #include "expr/type_node.h"
 #include "options/quantifiers_options.h"
 #include "theory/type_enumerator.h"

@@ -175,7 +175,7 @@ TPL_OPTION_STRUCT_RW = \
   bool wasSetByUser() const;
   void set(const type& v);
   const char* getName() const;
-}} thread_local {name} CVC4_PUBLIC;"""
+}} {name} CVC4_PUBLIC;"""
 
 TPL_OPTION_STRUCT_RO = \
 """extern struct CVC4_PUBLIC {name}__option_t
@@ -184,7 +184,7 @@ TPL_OPTION_STRUCT_RO = \
   type operator()() const;
   bool wasSetByUser() const;
   const char* getName() const;
-}} thread_local {name} CVC4_PUBLIC;"""
+}} {name} CVC4_PUBLIC;"""
 
 
 TPL_DECL_SET = \
@@ -629,7 +629,7 @@ def codegen_module(module, dst_dir, tpl_module_h, tpl_module_cpp):
         accs.append(TPL_IMPL_WAS_SET_BY_USER.format(name=option.name))
 
         # Global definitions
-        defs.append('thread_local struct {name}__option_t {name};'.format(name=option.name))
+        defs.append('struct {name}__option_t {name};'.format(name=option.name))
 
         if option.mode:
             values = option.mode.keys()

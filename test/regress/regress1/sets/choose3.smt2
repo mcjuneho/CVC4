@@ -1,5 +1,3 @@
-; COMMAND-LINE: -q
-; EXPECT: sat
 (set-logic ALL)
 (set-info :status sat)
 (set-option :produce-models true)

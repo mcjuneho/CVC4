@@ -1,7 +1,7 @@
 #####################
 ## CMakeLists.txt
 ## Top contributors (to current version):
-##   Mathias Preiner, Andrew Reynolds, Aina Niemetz
+##   Mathias Preiner, Aina Niemetz, Andrew Reynolds
 ## This file is part of the CVC4 project.
 ## Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
 ## in the top-level source directory and their institutional affiliations.
@@ -9,6 +9,7 @@
 ## directory for licensing information.
 ##
 libcvc4_add_sources(
+  array.h
   array_store_all.cpp
   array_store_all.h
   ascription_type.cpp
@@ -17,8 +18,6 @@ libcvc4_add_sources(
   attribute.cpp
   attribute_internals.h
   attribute_unique_id.h
-  bound_var_manager.cpp
-  bound_var_manager.h
   buffered_proof_generator.cpp
   buffered_proof_generator.h
   emptyset.cpp
@@ -33,6 +32,8 @@ libcvc4_add_sources(
   lazy_proof.h
   lazy_proof_chain.cpp
   lazy_proof_chain.h
+  lazy_proof_set.cpp
+  lazy_proof_set.h
   match_trie.cpp
   match_trie.h
   node.cpp
@@ -57,8 +58,6 @@ libcvc4_add_sources(
   proof.h
   proof_checker.cpp
   proof_checker.h
-  proof_ensure_closed.cpp
-  proof_ensure_closed.h
   proof_generator.cpp
   proof_generator.h
   proof_node.cpp
@@ -73,7 +72,6 @@ libcvc4_add_sources(
   proof_node_updater.h
   proof_rule.cpp
   proof_rule.h
-  proof_set.h
   proof_step_buffer.cpp
   proof_step_buffer.h
   skolem_manager.cpp
@@ -114,8 +112,6 @@ libcvc4_add_sources(
   record.h
   sequence.cpp
   sequence.h
-  subs.cpp
-  subs.h
   sygus_datatype.cpp
   sygus_datatype.h
   uninterpreted_constant.cpp

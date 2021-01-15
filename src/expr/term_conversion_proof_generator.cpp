@@ -84,6 +84,7 @@ void TConvProofGenerator::addRewriteStep(Node t,
   Node eq = registerRewriteStep(t, s, tctx);
   if (!eq.isNull())
   {
+    AlwaysAssert(ps.d_rule != PfRule::ASSUME);
     d_proof.addStep(eq, ps);
   }
 }
@@ -98,6 +99,7 @@ void TConvProofGenerator::addRewriteStep(Node t,
   Node eq = registerRewriteStep(t, s, tctx);
   if (!eq.isNull())
   {
+    AlwaysAssert(id != PfRule::ASSUME);
     d_proof.addStep(eq, id, children, args);
   }
 }
@@ -136,9 +138,7 @@ Node TConvProofGenerator::registerRewriteStep(Node t, Node s, uint32_t tctx)
   // should not rewrite term to two different things
   if (!getRewriteStepInternal(thash).isNull())
   {
-    Assert(getRewriteStepInternal(thash) == s)
-        << identify() << " rewriting " << t << " to both " << s << " and "
-        << getRewriteStepInternal(thash);
+    Assert(getRewriteStepInternal(thash) == s);
     return Node::null();
   }
   d_rewriteMap[thash] = s;
@@ -178,21 +178,16 @@ std::shared_ptr<ProofNode> TConvProofGenerator::getProofFor(Node f)
     Node conc = getProofForRewriting(f[0], lpf, d_tcontext);
     if (conc != f)
     {
-      bool debugTraceEnabled = Trace.isOn("tconv-pf-gen-debug");
       Assert(conc.getKind() == EQUAL && conc[0] == f[0]);
       std::stringstream serr;
       serr << "TConvProofGenerator::getProofFor: " << toStringDebug()
-           << ": failed, mismatch";
-      if (!debugTraceEnabled)
-      {
-        serr << " (see -t tconv-pf-gen-debug for details)";
-      }
-      serr << std::endl;
+           << ": failed, mismatch (see -t tconv-pf-gen-debug for details)"
+           << std::endl;
       serr << "                  source: " << f[0] << std::endl;
       serr << "expected after rewriting: " << f[1] << std::endl;
       serr << "  actual after rewriting: " << conc[1] << std::endl;
 
-      if (debugTraceEnabled)
+      if (Trace.isOn("tconv-pf-gen-debug"))
       {
         Trace("tconv-pf-gen-debug") << "Printing rewrite steps..." << std::endl;
         serr << "Rewrite steps: " << std::endl;

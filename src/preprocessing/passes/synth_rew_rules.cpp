@@ -23,7 +23,6 @@
 #include "theory/quantifiers/candidate_rewrite_database.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
-#include "theory/quantifiers/sygus/sygus_utils.h"
 #include "theory/quantifiers/term_util.h"
 
 using namespace std;
@@ -252,7 +251,7 @@ PreprocessingPassResult SynthRewRulesPass::applyInternal(
     std::stringstream ss;
     ss << "T" << i;
     std::string tname = ss.str();
-    TypeNode tnu = nm->mkSort(tname, NodeManager::SORT_FLAG_PLACEHOLDER);
+    TypeNode tnu = nm->mkSort(tname, ExprManager::SORT_FLAG_PLACEHOLDER);
     cterm_to_utype[ct] = tnu;
     unres.insert(tnu);
     sdts.push_back(SygusDatatype(tname));
@@ -430,6 +429,12 @@ PreprocessingPassResult SynthRewRulesPass::applyInternal(
 
   // sygus attribute to mark the conjecture as a sygus conjecture
   Trace("srs-input") << "Make sygus conjecture..." << std::endl;
+  Node iaVar = nm->mkSkolem("sygus", nm->booleanType());
+  // the attribute to mark the conjecture as being a sygus conjecture
+  theory::SygusAttribute ca;
+  iaVar.setAttribute(ca, true);
+  Node instAttr = nm->mkNode(INST_ATTRIBUTE, iaVar);
+  Node instAttrList = nm->mkNode(INST_PATTERN_LIST, instAttr);
   // we are "synthesizing" functions for each type of subterm
   std::vector<Node> synthConj;
   unsigned fCounter = 1;
@@ -446,9 +451,10 @@ PreprocessingPassResult SynthRewRulesPass::applyInternal(
     // this marks that the grammar used for solutions for sfun is the type of
     // gvar, which is the sygus datatype type constructed above.
     sfun.setAttribute(ssg, gvar);
+    Node fvarBvl = nm->mkNode(BOUND_VAR_LIST, sfun);
 
     Node body = nm->mkConst(false);
-    body = theory::quantifiers::SygusUtils::mkSygusConjecture({sfun}, body);
+    body = nm->mkNode(FORALL, fvarBvl, body, instAttrList);
     synthConj.push_back(body);
   }
   Node trueNode = nm->mkConst(true);

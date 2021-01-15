@@ -1,5 +1,3 @@
-; COMMAND-LINE: -q
-; EXPECT: sat
 (set-logic BV)
 (set-info :status sat)
 (declare-fun k_141 () (_ BitVec 16))

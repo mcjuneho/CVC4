@@ -1,4 +1,3 @@
-% COMMAND-LINE: -q
 % EXPECT: sat
 OPTION "produce-models";
 OPTION "fmf-bound";

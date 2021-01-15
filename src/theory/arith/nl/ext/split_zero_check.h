@@ -2,7 +2,7 @@
 /*! \file split_zero_check.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Gereon Kremer, Andrew Reynolds, Tim King
+ **   Gereon Kremer
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -26,7 +26,7 @@ namespace nl {
 class SplitZeroCheck
 {
  public:
-  SplitZeroCheck(ExtState* data);
+  SplitZeroCheck(ExtState* data, context::Context* ctx);
 
   /** check split zero
    *

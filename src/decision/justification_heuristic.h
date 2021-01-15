@@ -121,9 +121,8 @@ public:
 
   prop::SatLiteral getNext(bool &stopSearch) override;
 
-  void addAssertions(const std::vector<Node>& assertions,
-                     const std::vector<Node>& ppLemmas,
-                     const std::vector<Node>& ppSkolems) override;
+  void addAssertions(
+      const preprocessing::AssertionPipeline &assertions) override;
 
  private:
   /* getNext with an option to specify threshold */

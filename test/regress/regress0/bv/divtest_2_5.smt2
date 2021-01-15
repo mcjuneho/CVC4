@@ -1,6 +1,7 @@
-; EXPECT: unsat
+; EXPECT: sat
+(set-info :smt-lib-version 2.5)
 (set-logic QF_BV)
-(set-info :status unsat)
+(set-info :status sat)
 (declare-fun x () (_ BitVec 8))
 (declare-fun y () (_ BitVec 8))
 

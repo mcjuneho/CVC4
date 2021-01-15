@@ -2,7 +2,7 @@
 /*! \file parser_builder_black.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Christopher L. Conway, Andrew Reynolds, Aina Niemetz
+ **   Christopher L. Conway, Aina Niemetz, Tim King
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.

@@ -54,7 +54,7 @@ class HoExtension
  public:
   HoExtension(TheoryState& state, TheoryInferenceManager& im);
 
-  /** ppRewrite
+  /** expand definition
    *
    * This returns the expanded form of node.
    *
@@ -63,7 +63,7 @@ class HoExtension
    * function variables for function heads that are not variables via the
    * getApplyUfForHoApply method below.
    */
-  Node ppRewrite(Node node);
+  Node expandDefinition(Node node);
 
   /** check higher order
    *

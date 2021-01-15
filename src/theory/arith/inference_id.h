@@ -2,7 +2,7 @@
 /*! \file inference_id.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer, Yoni Zohar
+ **   Andrew Reynolds, Gereon Kremer
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -71,10 +71,8 @@ enum class InferenceId : uint32_t
   NL_IAND_INIT_REFINE,
   // value refinements (IAndSolver::checkFullRefine)
   NL_IAND_VALUE_REFINE,
-  // sum refinements (IAndSolver::checkFullRefine)
+  // sum refinements (IAndSulver::checkFullRefine)
   NL_IAND_SUM_REFINE,
-  // bitwise refinements (IAndSolver::checkFullRefine)
-  NL_IAND_BITWISE_REFINE,
   //-------------------- cad solver
   // conflict / infeasible subset obtained from cad
   NL_CAD_CONFLICT,

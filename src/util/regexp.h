@@ -17,6 +17,7 @@
 #ifndef CVC4__UTIL__REGEXP_H
 #define CVC4__UTIL__REGEXP_H
 
+#include <cstdint>
 #include <iosfwd>
 
 namespace CVC4 {

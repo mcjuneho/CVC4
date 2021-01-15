@@ -276,26 +276,16 @@ EqualityNodeId EqualityEngine::newNode(TNode node) {
   return newId;
 }
 
-void EqualityEngine::addFunctionKind(Kind fun,
-                                     bool interpreted,
-                                     bool extOperator)
-{
-  d_congruenceKinds.set(fun);
-  if (fun != kind::EQUAL)
-  {
-    if (interpreted)
-    {
-      Debug("equality::evaluation")
-          << d_name << "::eq::addFunctionKind(): " << fun << " is interpreted "
-          << std::endl;
-      d_congruenceKindsInterpreted.set(fun);
+void EqualityEngine::addFunctionKind(Kind fun, bool interpreted, bool extOperator) {
+  d_congruenceKinds |= fun;
+  if (fun != kind::EQUAL) {
+    if (interpreted) {
+      Debug("equality::evaluation") << d_name << "::eq::addFunctionKind(): " << fun << " is interpreted " << std::endl;
+      d_congruenceKindsInterpreted |= fun;
     }
-    if (extOperator)
-    {
-      Debug("equality::extoperator")
-          << d_name << "::eq::addFunctionKind(): " << fun
-          << " is an external operator kind " << std::endl;
-      d_congruenceKindsExtOperators.set(fun);
+    if (extOperator) {
+      Debug("equality::extoperator") << d_name << "::eq::addFunctionKind(): " << fun << " is an external operator kind " << std::endl;
+      d_congruenceKindsExtOperators |= fun;
     }
   }
 }
@@ -1296,7 +1286,7 @@ void EqualityEngine::explainLit(TNode lit, std::vector<TNode>& assumptions)
     explainPredicate(atom, polarity, tassumptions);
   }
   // ensure that duplicates are removed
-  for (TNode a : tassumptions)
+  for (const TNode a : tassumptions)
   {
     if (std::find(assumptions.begin(), assumptions.end(), a)
         == assumptions.end())
@@ -1754,9 +1744,8 @@ void EqualityEngine::addTriggerPredicate(TNode predicate) {
     // equality is handled separately
     return addTriggerEquality(predicate);
   }
-  Assert(d_congruenceKinds.test(predicate.getKind()))
-      << "No point in adding non-congruence predicates, kind is "
-      << predicate.getKind();
+  Assert(d_congruenceKinds.tst(predicate.getKind()))
+      << "No point in adding non-congruence predicates, kind is " << predicate.getKind();
 
   if (d_done) {
     return;

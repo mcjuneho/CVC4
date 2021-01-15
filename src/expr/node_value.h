@@ -26,6 +26,8 @@
 #ifndef CVC4__EXPR__NODE_VALUE_H
 #define CVC4__EXPR__NODE_VALUE_H
 
+#include <stdint.h>
+
 #include <iterator>
 #include <string>
 

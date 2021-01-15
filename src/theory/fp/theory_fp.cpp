@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "options/fp_options.h"
-#include "theory/fp/fp_converter.h"
 #include "theory/fp/theory_fp_rewriter.h"
 #include "theory/rewriter.h"
 #include "theory/theory_model.h"
@@ -109,7 +108,7 @@ TheoryFp::TheoryFp(context::Context* c,
     : Theory(THEORY_FP, c, u, out, valuation, logicInfo, pnm),
       d_notification(*this),
       d_registeredTerms(u),
-      d_conv(new FpConverter(u)),
+      d_conv(u),
       d_expansionRequested(false),
       d_conflictNode(c, Node::null()),
       d_minMap(u),
@@ -117,9 +116,9 @@ TheoryFp::TheoryFp(context::Context* c,
       d_toUBVMap(u),
       d_toSBVMap(u),
       d_toRealMap(u),
-      d_realToFloatMap(u),
-      d_floatToRealMap(u),
-      d_abstractionMap(u),
+      realToFloatMap(u),
+      floatToRealMap(u),
+      abstractionMap(u),
       d_state(c, u, valuation)
 {
   // indicate we are using the default theory state object
@@ -342,10 +341,10 @@ Node TheoryFp::abstractRealToFloat(Node node)
   Assert(t.getKind() == kind::FLOATINGPOINT_TYPE);
 
   NodeManager *nm = NodeManager::currentNM();
-  ComparisonUFMap::const_iterator i(d_realToFloatMap.find(t));
+  ComparisonUFMap::const_iterator i(realToFloatMap.find(t));
 
   Node fun;
-  if (i == d_realToFloatMap.end())
+  if (i == realToFloatMap.end())
   {
     std::vector<TypeNode> args(2);
     args[0] = node[0].getType();
@@ -354,7 +353,7 @@ Node TheoryFp::abstractRealToFloat(Node node)
                        nm->mkFunctionType(args, node.getType()),
                        "floatingpoint_abstract_real_to_float",
                        NodeManager::SKOLEM_EXACT_NAME);
-    d_realToFloatMap.insert(t, fun);
+    realToFloatMap.insert(t, fun);
   }
   else
   {
@@ -362,7 +361,7 @@ Node TheoryFp::abstractRealToFloat(Node node)
   }
   Node uf = nm->mkNode(kind::APPLY_UF, fun, node[0], node[1]);
 
-  d_abstractionMap.insert(uf, node);
+  abstractionMap.insert(uf, node);
 
   return uf;
 }
@@ -374,10 +373,10 @@ Node TheoryFp::abstractFloatToReal(Node node)
   Assert(t.getKind() == kind::FLOATINGPOINT_TYPE);
 
   NodeManager *nm = NodeManager::currentNM();
-  ComparisonUFMap::const_iterator i(d_floatToRealMap.find(t));
+  ComparisonUFMap::const_iterator i(floatToRealMap.find(t));
 
   Node fun;
-  if (i == d_floatToRealMap.end())
+  if (i == floatToRealMap.end())
   {
     std::vector<TypeNode> args(2);
     args[0] = t;
@@ -386,7 +385,7 @@ Node TheoryFp::abstractFloatToReal(Node node)
                        nm->mkFunctionType(args, nm->realType()),
                        "floatingpoint_abstract_float_to_real",
                        NodeManager::SKOLEM_EXACT_NAME);
-    d_floatToRealMap.insert(t, fun);
+    floatToRealMap.insert(t, fun);
   }
   else
   {
@@ -394,7 +393,7 @@ Node TheoryFp::abstractFloatToReal(Node node)
   }
   Node uf = nm->mkNode(kind::APPLY_UF, fun, node[0], node[1]);
 
-  d_abstractionMap.insert(uf, node);
+  abstractionMap.insert(uf, node);
 
   return uf;
 }
@@ -454,12 +453,6 @@ TrustNode TheoryFp::expandDefinition(Node node)
 TrustNode TheoryFp::ppRewrite(TNode node)
 {
   Trace("fp-ppRewrite") << "TheoryFp::ppRewrite(): " << node << std::endl;
-  // first, see if we need to expand definitions
-  TrustNode texp = expandDefinition(node);
-  if (!texp.isNull())
-  {
-    return texp;
-  }
 
   Node res = node;
 
@@ -596,7 +589,7 @@ bool TheoryFp::refineAbstraction(TheoryModel *m, TNode abstract, TNode concrete)
           nm->mkNode(kind::FLOATINGPOINT_TO_FP_REAL,
                      nm->mkConst(FloatingPointToFPReal(
                          concrete[0].getType().getConst<FloatingPointSize>())),
-                     nm->mkConst(ROUND_TOWARD_POSITIVE),
+                     nm->mkConst(roundTowardPositive),
                      abstractValue));
 
       Node bg = nm->mkNode(
@@ -613,7 +606,7 @@ bool TheoryFp::refineAbstraction(TheoryModel *m, TNode abstract, TNode concrete)
           nm->mkNode(kind::FLOATINGPOINT_TO_FP_REAL,
                      nm->mkConst(FloatingPointToFPReal(
                          concrete[0].getType().getConst<FloatingPointSize>())),
-                     nm->mkConst(ROUND_TOWARD_NEGATIVE),
+                     nm->mkConst(roundTowardNegative),
                      abstractValue));
 
       Node bl = nm->mkNode(
@@ -744,9 +737,9 @@ bool TheoryFp::refineAbstraction(TheoryModel *m, TNode abstract, TNode concrete)
 
 void TheoryFp::convertAndEquateTerm(TNode node) {
   Trace("fp-convertTerm") << "TheoryFp::convertTerm(): " << node << std::endl;
-  size_t oldAdditionalAssertions = d_conv->d_additionalAssertions.size();
+  size_t oldAdditionalAssertions = d_conv.d_additionalAssertions.size();
 
-  Node converted(d_conv->convert(node));
+  Node converted(d_conv.convert(node));
 
   if (converted != node) {
     Debug("fp-convertTerm")
@@ -755,11 +748,11 @@ void TheoryFp::convertAndEquateTerm(TNode node) {
         << "TheoryFp::convertTerm(): after  " << converted << std::endl;
   }
 
-  size_t newAdditionalAssertions = d_conv->d_additionalAssertions.size();
+  size_t newAdditionalAssertions = d_conv.d_additionalAssertions.size();
   Assert(oldAdditionalAssertions <= newAdditionalAssertions);
 
   while (oldAdditionalAssertions < newAdditionalAssertions) {
-    Node addA = d_conv->d_additionalAssertions[oldAdditionalAssertions];
+    Node addA = d_conv.d_additionalAssertions[oldAdditionalAssertions];
 
     Debug("fp-convertTerm") << "TheoryFp::convertTerm(): additional assertion  "
                             << addA << std::endl;
@@ -951,14 +944,6 @@ void TheoryFp::conflictEqConstantMerge(TNode t1, TNode t2)
   return;
 }
 
-
-bool TheoryFp::needsCheckLastEffort() 
-{ 
-  // only need to check if we have added to the abstraction map, otherwise
-  // postCheck below is a no-op.
-  return !d_abstractionMap.empty(); 
-}
-
 void TheoryFp::postCheck(Effort level)
 {
   // Resolve the abstractions for the conversion lemmas
@@ -968,8 +953,8 @@ void TheoryFp::postCheck(Effort level)
     TheoryModel* m = getValuation().getModel();
     bool lemmaAdded = false;
 
-    for (AbstractionMap::const_iterator i = d_abstractionMap.begin();
-         i != d_abstractionMap.end();
+    for (abstractionMapType::const_iterator i = abstractionMap.begin();
+         i != abstractionMap.end();
          ++i)
     {
       if (m->hasTerm((*i).first))
@@ -1031,7 +1016,7 @@ TrustNode TheoryFp::explain(TNode n)
 }
 
 Node TheoryFp::getModelValue(TNode var) {
-  return d_conv->getValue(d_valuation, var);
+  return d_conv.getValue(d_valuation, var);
 }
 
 bool TheoryFp::collectModelInfo(TheoryModel* m,
@@ -1084,16 +1069,14 @@ bool TheoryFp::collectModelValues(TheoryModel* m,
   }
 
   for (std::set<TNode>::const_iterator i(relevantVariables.begin());
-       i != relevantVariables.end();
-       ++i)
-  {
+       i != relevantVariables.end(); ++i) {
     TNode node = *i;
 
     Trace("fp-collectModelInfo")
         << "TheoryFp::collectModelInfo(): relevantVariable " << node
         << std::endl;
 
-    if (!m->assertEquality(node, d_conv->getValue(d_valuation, node), true))
+    if (!m->assertEquality(node, d_conv.getValue(d_valuation, node), true))
     {
       return false;
     }

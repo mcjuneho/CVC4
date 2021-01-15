@@ -287,8 +287,7 @@ TrustNode TheoryInferenceManager::mkLemmaExp(Node conc,
 
 bool TheoryInferenceManager::hasCachedLemma(TNode lem, LemmaProperty p)
 {
-  Node rewritten = Rewriter::rewrite(lem);
-  return d_lemmasSent.find(rewritten) != d_lemmasSent.end();
+  return d_lemmasSent.find(lem) != d_lemmasSent.end();
 }
 
 uint32_t TheoryInferenceManager::numSentLemmas() const
@@ -446,12 +445,11 @@ bool TheoryInferenceManager::hasSentFact() const
 
 bool TheoryInferenceManager::cacheLemma(TNode lem, LemmaProperty p)
 {
-  Node rewritten = Rewriter::rewrite(lem);
-  if (d_lemmasSent.find(rewritten) != d_lemmasSent.end())
+  if (d_lemmasSent.find(lem) != d_lemmasSent.end())
   {
     return false;
   }
-  d_lemmasSent.insert(rewritten);
+  d_lemmasSent.insert(lem);
   return true;
 }
 

@@ -2,7 +2,7 @@
 /*! \file theory_fp.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Martin Brain, Aina Niemetz
+ **   Martin Brain, Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -24,6 +24,7 @@
 #include <utility>
 
 #include "context/cdo.h"
+#include "theory/fp/fp_converter.h"
 #include "theory/fp/theory_fp_rewriter.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
@@ -32,10 +33,7 @@ namespace CVC4 {
 namespace theory {
 namespace fp {
 
-class FpConverter;
-
-class TheoryFp : public Theory
-{
+class TheoryFp : public Theory {
  public:
   /** Constructs a new instance of TheoryFp w.r.t. the provided contexts. */
   TheoryFp(context::Context* c,
@@ -44,9 +42,8 @@ class TheoryFp : public Theory
            Valuation valuation,
            const LogicInfo& logicInfo,
            ProofNodeManager* pnm = nullptr);
-
   //--------------------------------- initialization
-  /** Get the official theory rewriter of this theory. */
+  /** get the official theory rewriter of this theory */
   TheoryRewriter* getTheoryRewriter() override;
   /**
    * Returns true if we need an equality engine. If so, we initialize the
@@ -54,7 +51,7 @@ class TheoryFp : public Theory
    * documentation in Theory::needsEqualityEngine.
    */
   bool needsEqualityEngine(EeSetupInfo& esi) override;
-  /** Finish initialization. */
+  /** finish initialization */
   void finishInit() override;
   //--------------------------------- end initialization
 
@@ -66,7 +63,7 @@ class TheoryFp : public Theory
 
   //--------------------------------- standard check
   /** Do we need a check call at last call effort? */
-  bool needsCheckLastEffort() override;
+  bool needsCheckLastEffort() override { return true; }
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
   /** Pre-notify fact, return true if processed. */
@@ -80,10 +77,8 @@ class TheoryFp : public Theory
   Node getModelValue(TNode var) override;
   bool collectModelInfo(TheoryModel* m,
                         const std::set<Node>& relevantTerms) override;
-  /**
-   * Collect model values in m based on the relevant terms given by
-   * relevantTerms.
-   */
+  /** Collect model values in m based on the relevant terms given by
+   * relevantTerms */
   bool collectModelValues(TheoryModel* m,
                           const std::set<Node>& relevantTerms) override;
 
@@ -92,20 +87,7 @@ class TheoryFp : public Theory
   TrustNode explain(TNode n) override;
 
  protected:
-  using PairTypeNodeHashFunction = PairHashFunction<TypeNode,
-                                                    TypeNode,
-                                                    TypeNodeHashFunction,
-                                                    TypeNodeHashFunction>;
-  /** Uninterpreted functions for undefined cases of non-total operators. */
-  using ComparisonUFMap =
-      context::CDHashMap<TypeNode, Node, TypeNodeHashFunction>;
-  /** Uninterpreted functions for lazy handling of conversions. */
-  using ConversionUFMap = context::
-      CDHashMap<std::pair<TypeNode, TypeNode>, Node, PairTypeNodeHashFunction>;
-  using ConversionAbstractionMap = ComparisonUFMap;
-  using AbstractionMap = context::CDHashMap<Node, Node, NodeHashFunction>;
-
-  /** Equality engine. */
+  /** Equality engine */
   class NotifyClass : public eq::EqualityEngineNotify {
    protected:
     TheoryFp& d_theorySolver;
@@ -126,15 +108,14 @@ class TheoryFp : public Theory
 
   NotifyClass d_notification;
 
-  /** General utility. */
+  /** General utility **/
   void registerTerm(TNode node);
   bool isRegistered(TNode node);
 
   context::CDHashSet<Node, NodeHashFunction> d_registeredTerms;
 
-  /** The word-blaster. Translates FP -> BV. */
-  std::unique_ptr<FpConverter> d_conv;
-
+  /** Bit-blasting conversion */
+  FpConverter d_conv;
   bool d_expansionRequested;
 
   void convertAndEquateTerm(TNode node);
@@ -152,30 +133,44 @@ class TheoryFp : public Theory
    */
   void conflictEqConstantMerge(TNode t1, TNode t2);
 
-  bool refineAbstraction(TheoryModel* m, TNode abstract, TNode concrete);
+  context::CDO<Node> d_conflictNode;
+
+  typedef context::CDHashMap<TypeNode, Node, TypeNodeHashFunction>
+      ComparisonUFMap;
+
+  ComparisonUFMap d_minMap;
+  ComparisonUFMap d_maxMap;
 
   Node minUF(Node);
   Node maxUF(Node);
 
+  typedef context::CDHashMap<std::pair<TypeNode, TypeNode>, Node,
+                             PairTypeNodeHashFunction>
+      ConversionUFMap;
+
+  ConversionUFMap d_toUBVMap;
+  ConversionUFMap d_toSBVMap;
+
   Node toUBVUF(Node);
   Node toSBVUF(Node);
 
+  ComparisonUFMap d_toRealMap;
+
   Node toRealUF(Node);
+
+  /** Uninterpretted functions for lazy handling of conversions */
+  typedef ComparisonUFMap conversionAbstractionMap;
+
+  conversionAbstractionMap realToFloatMap;
+  conversionAbstractionMap floatToRealMap;
 
   Node abstractRealToFloat(Node);
   Node abstractFloatToReal(Node);
 
- private:
-  context::CDO<Node> d_conflictNode;
+  typedef context::CDHashMap<Node, Node, NodeHashFunction> abstractionMapType;
+  abstractionMapType abstractionMap;  // abstract -> original
 
-  ComparisonUFMap d_minMap;
-  ComparisonUFMap d_maxMap;
-  ConversionUFMap d_toUBVMap;
-  ConversionUFMap d_toSBVMap;
-  ComparisonUFMap d_toRealMap;
-  ConversionAbstractionMap d_realToFloatMap;
-  ConversionAbstractionMap d_floatToRealMap;
-  AbstractionMap d_abstractionMap;  // abstract -> original
+  bool refineAbstraction(TheoryModel* m, TNode abstract, TNode concrete);
 
   /** The theory rewriter for this theory. */
   TheoryFpRewriter d_rewriter;

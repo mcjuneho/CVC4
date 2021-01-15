@@ -23,9 +23,9 @@
 namespace CVC4 {
 namespace prop {
 
-class MinisatSatSolver : public CDCLTSatSolverInterface
-{
- public:
+class MinisatSatSolver : public DPLLSatSolverInterface {
+public:
+
   MinisatSatSolver(StatisticsRegistry* registry);
   ~MinisatSatSolver() override;
 
@@ -38,10 +38,7 @@ class MinisatSatSolver : public CDCLTSatSolverInterface
 
   static void  toMinisatClause(SatClause& clause, Minisat::vec<Minisat::Lit>& minisat_clause);
   static void  toSatClause    (const Minisat::Clause& clause, SatClause& sat_clause);
-  void initialize(context::Context* context,
-                  TheoryProxy* theoryProxy,
-                  CVC4::context::UserContext* userContext,
-                  ProofNodeManager* pnm) override;
+  void initialize(context::Context* context, TheoryProxy* theoryProxy) override;
 
   ClauseId addClause(SatClause& clause, bool removable) override;
   ClauseId addXorClause(SatClause& clause, bool rhs, bool removable) override
@@ -82,15 +79,6 @@ class MinisatSatSolver : public CDCLTSatSolverInterface
 
   bool isDecision(SatVariable decn) const override;
 
-  /** Retrieve a pointer to the unerlying solver. */
-  Minisat::SimpSolver* getSolver() { return d_minisat; }
-
-  /** Retrieve the proof manager of this SAT solver. */
-  SatProofManager* getProofManager();
-
-  /** Retrieve the refutation proof of this SAT solver. */
-  std::shared_ptr<ProofNode> getProof() override;
-
  private:
 
   /** The SatSolver used */
@@ -116,7 +104,7 @@ class MinisatSatSolver : public CDCLTSatSolverInterface
   };/* class MinisatSatSolver::Statistics */
   Statistics d_statistics;
 
-}; /* class MinisatSatSolver */
+};/* class MinisatSatSolver */
 
 }/* CVC4::prop namespace */
 }/* CVC4 namespace */

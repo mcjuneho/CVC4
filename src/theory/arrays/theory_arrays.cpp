@@ -318,12 +318,6 @@ Node TheoryArrays::solveWrite(TNode term, bool solve1, bool solve2, bool ppCheck
 
 TrustNode TheoryArrays::ppRewrite(TNode term)
 {
-  // first, see if we need to expand definitions
-  TrustNode texp = expandDefinition(term);
-  if (!texp.isNull())
-  {
-    return texp;
-  }
   if (!d_preprocess)
   {
     return TrustNode::null();
@@ -1758,7 +1752,7 @@ void TheoryArrays::checkRowLemmas(TNode a, TNode b)
   Trace("arrays-crl")<<"Arrays::checkLemmas done.\n";
 }
 
-void TheoryArrays::propagateRowLemma(RowLemmaType lem)
+void TheoryArrays::propagate(RowLemmaType lem)
 {
   Debug("pf::array") << "TheoryArrays: RowLemma Propagate called. options::arraysPropagate() = "
                      << options::arraysPropagate() << std::endl;
@@ -1845,7 +1839,7 @@ void TheoryArrays::queueRowLemma(RowLemmaType lem)
   // If propagating, check propagations
   int prop = options::arraysPropagate();
   if (prop > 0) {
-    propagateRowLemma(lem);
+    propagate(lem);
   }
 
   // Prefer equality between indexes so as not to introduce new read terms
@@ -1975,7 +1969,7 @@ bool TheoryArrays::dischargeLemmas()
 
     int prop = options::arraysPropagate();
     if (prop > 0) {
-      propagateRowLemma(l);
+      propagate(l);
       if (d_state.isInConflict())
       {
         return true;

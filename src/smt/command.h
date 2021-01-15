@@ -2,7 +2,7 @@
 /*! \file command.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Abdalrhman Mohamed, Tim King, Morgan Deters
+ **   Tim King, Morgan Deters, Abdalrhman Mohamed
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -29,6 +29,8 @@
 #include <vector>
 
 #include "api/cvc4cpp.h"
+#include "expr/expr.h"
+#include "expr/type.h"
 #include "util/result.h"
 #include "util/sexpr.h"
 
@@ -48,16 +50,6 @@ class CommandStatus;
 namespace smt {
 class Model;
 }
-
-/**
- * Convert a symbolic expression to string. This method differs from
- * Term::toString in that it does not surround constant strings with double
- * quote symbols.
- *
- * @param sexpr the symbolic expression to convert
- * @return the symbolic expression as string
- */
-std::string sexprToString(api::Term sexpr);
 
 std::ostream& operator<<(std::ostream&, const Command&) CVC4_PUBLIC;
 std::ostream& operator<<(std::ostream&, const Command*) CVC4_PUBLIC;
@@ -206,6 +198,7 @@ class CVC4_PUBLIC Command
   typedef CommandPrintSuccess printsuccess;
 
   Command();
+  Command(const api::Solver* solver);
   Command(const Command& cmd);
 
   virtual ~Command();
@@ -394,11 +387,16 @@ class CVC4_PUBLIC DeclareFunctionCommand : public DeclarationDefinitionCommand
  protected:
   api::Term d_func;
   api::Sort d_sort;
+  bool d_printInModel;
+  bool d_printInModelSetByUser;
 
  public:
   DeclareFunctionCommand(const std::string& id, api::Term func, api::Sort sort);
   api::Term getFunction() const;
   api::Sort getSort() const;
+  bool getPrintInModel() const;
+  bool getPrintInModelSetByUser() const;
+  void setPrintInModel(bool p);
 
   void invoke(api::Solver* solver, SymbolManager* sm) override;
   Command* clone() const override;
@@ -496,6 +494,28 @@ class CVC4_PUBLIC DefineFunctionCommand : public DeclarationDefinitionCommand
    */
   bool d_global;
 }; /* class DefineFunctionCommand */
+
+/**
+ * This differs from DefineFunctionCommand only in that it instructs
+ * the SmtEngine to "remember" this function for later retrieval with
+ * getAssignment().  Used for :named attributes in SMT-LIBv2.
+ */
+class CVC4_PUBLIC DefineNamedFunctionCommand : public DefineFunctionCommand
+{
+ public:
+  DefineNamedFunctionCommand(const std::string& id,
+                             api::Term func,
+                             const std::vector<api::Term>& formals,
+                             api::Term formula,
+                             bool global);
+  void invoke(api::Solver* solver, SymbolManager* sm) override;
+  Command* clone() const override;
+  void toStream(
+      std::ostream& out,
+      int toDepth = -1,
+      size_t dag = 1,
+      OutputLanguage language = language::output::LANG_AUTO) const override;
+}; /* class DefineNamedFunctionCommand */
 
 /**
  * The command when parsing define-fun-rec or define-funs-rec.
@@ -1015,9 +1035,6 @@ class CVC4_PUBLIC GetProofCommand : public Command
   GetProofCommand();
 
   void invoke(api::Solver* solver, SymbolManager* sm) override;
-
-  void printResult(std::ostream& out, uint32_t verbosity = 2) const override;
-
   Command* clone() const override;
   std::string getCommandName() const override;
   void toStream(
@@ -1025,10 +1042,6 @@ class CVC4_PUBLIC GetProofCommand : public Command
       int toDepth = -1,
       size_t dag = 1,
       OutputLanguage language = language::output::LANG_AUTO) const override;
-
- private:
-  /** the result of the getProof call */
-  std::string d_result;
 }; /* class GetProofCommand */
 
 class CVC4_PUBLIC GetInstantiationsCommand : public Command
@@ -1230,8 +1243,8 @@ class CVC4_PUBLIC GetUnsatCoreCommand : public Command
       OutputLanguage language = language::output::LANG_AUTO) const override;
 
  protected:
-  /** The symbol manager we were invoked with */
-  SymbolManager* d_sm;
+  /** The solver we were invoked with */
+  api::Solver* d_solver;
   /** the result of the unsat core call */
   std::vector<api::Term> d_result;
 }; /* class GetUnsatCoreCommand */
@@ -1299,13 +1312,13 @@ class CVC4_PUBLIC SetInfoCommand : public Command
 {
  protected:
   std::string d_flag;
-  std::string d_sexpr;
+  SExpr d_sexpr;
 
  public:
-  SetInfoCommand(std::string flag, const std::string& sexpr);
+  SetInfoCommand(std::string flag, const SExpr& sexpr);
 
   std::string getFlag() const;
-  const std::string& getSExpr() const;
+  SExpr getSExpr() const;
 
   void invoke(api::Solver* solver, SymbolManager* sm) override;
   Command* clone() const override;
@@ -1344,13 +1357,13 @@ class CVC4_PUBLIC SetOptionCommand : public Command
 {
  protected:
   std::string d_flag;
-  std::string d_sexpr;
+  SExpr d_sexpr;
 
  public:
-  SetOptionCommand(std::string flag, const std::string& sexpr);
+  SetOptionCommand(std::string flag, const SExpr& sexpr);
 
   std::string getFlag() const;
-  const std::string& getSExpr() const;
+  SExpr getSExpr() const;
 
   void invoke(api::Solver* solver, SymbolManager* sm) override;
   Command* clone() const override;
@@ -1384,6 +1397,32 @@ class CVC4_PUBLIC GetOptionCommand : public Command
       size_t dag = 1,
       OutputLanguage language = language::output::LANG_AUTO) const override;
 }; /* class GetOptionCommand */
+
+// Set expression name command
+// Note this is not an official smt2 command
+// Conceptually:
+//   (assert (! expr :named name))
+// is converted to
+//   (assert expr)
+//   (set-expr-name expr name)
+class CVC4_PUBLIC SetExpressionNameCommand : public Command
+{
+ protected:
+  api::Term d_term;
+  std::string d_name;
+
+ public:
+  SetExpressionNameCommand(api::Term term, std::string name);
+
+  void invoke(api::Solver* solver, SymbolManager* sm) override;
+  Command* clone() const override;
+  std::string getCommandName() const override;
+  void toStream(
+      std::ostream& out,
+      int toDepth = -1,
+      size_t dag = 1,
+      OutputLanguage language = language::output::LANG_AUTO) const override;
+}; /* class SetExpressionNameCommand */
 
 class CVC4_PUBLIC DatatypeDeclarationCommand : public Command
 {

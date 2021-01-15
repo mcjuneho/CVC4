@@ -253,6 +253,7 @@ class TheorySep : public Theory {
   enum {
     bound_strict,
     bound_default,
+    bound_herbrand,
     bound_invalid,
   };
   std::map< TypeNode, unsigned > d_bound_kind;

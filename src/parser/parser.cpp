@@ -16,6 +16,8 @@
 
 #include "parser/parser.h"
 
+#include <stdint.h>
+
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -25,7 +27,9 @@
 
 #include "api/cvc4cpp.h"
 #include "base/output.h"
+#include "expr/expr.h"
 #include "expr/kind.h"
+#include "expr/type.h"
 #include "options/options.h"
 #include "parser/input.h"
 #include "parser/parser_exception.h"
@@ -197,13 +201,16 @@ bool Parser::isPredicate(const std::string& name) {
 
 api::Term Parser::bindVar(const std::string& name,
                           const api::Sort& type,
-                          bool levelZero,
+                          uint32_t flags,
                           bool doOverload)
 {
-  bool globalDecls = d_symman->getGlobalDeclarations();
+  if (d_symman->getGlobalDeclarations())
+  {
+    flags |= ExprManager::VAR_FLAG_GLOBAL;
+  }
   Debug("parser") << "bindVar(" << name << ", " << type << ")" << std::endl;
-  api::Term expr = d_solver->mkConst(type, name);
-  defineVar(name, expr, globalDecls || levelZero, doOverload);
+  api::Term expr = mkVar(name, type, flags);
+  defineVar(name, expr, flags & ExprManager::VAR_FLAG_GLOBAL, doOverload);
   return expr;
 }
 
@@ -212,7 +219,7 @@ api::Term Parser::bindBoundVar(const std::string& name, const api::Sort& type)
   Debug("parser") << "bindBoundVar(" << name << ", " << type << ")"
                   << std::endl;
   api::Term expr = d_solver->mkVar(type, name);
-  defineVar(name, expr);
+  defineVar(name, expr, false);
   return expr;
 }
 
@@ -227,14 +234,33 @@ std::vector<api::Term> Parser::bindBoundVars(
   return vars;
 }
 
+api::Term Parser::mkAnonymousFunction(const std::string& prefix,
+                                      const api::Sort& type,
+                                      uint32_t flags)
+{
+  bool globalDecls = d_symman->getGlobalDeclarations();
+  if (globalDecls)
+  {
+    flags |= ExprManager::VAR_FLAG_GLOBAL;
+  }
+  stringstream name;
+  name << prefix << "_anon_" << ++d_anonymousFunctionCount;
+  return mkVar(name.str(), type, flags);
+}
+
 std::vector<api::Term> Parser::bindVars(const std::vector<std::string> names,
                                         const api::Sort& type,
-                                        bool levelZero,
+                                        uint32_t flags,
                                         bool doOverload)
 {
+  bool globalDecls = d_symman->getGlobalDeclarations();
+  if (globalDecls)
+  {
+    flags |= ExprManager::VAR_FLAG_GLOBAL;
+  }
   std::vector<api::Term> vars;
   for (unsigned i = 0; i < names.size(); ++i) {
-    vars.push_back(bindVar(names[i], type, levelZero, doOverload));
+    vars.push_back(bindVar(names[i], type, flags, doOverload));
   }
   return vars;
 }
@@ -306,29 +332,37 @@ void Parser::defineParameterizedType(const std::string& name,
   defineType(name, params, type);
 }
 
-api::Sort Parser::mkSort(const std::string& name)
+api::Sort Parser::mkSort(const std::string& name, uint32_t flags)
 {
   Debug("parser") << "newSort(" << name << ")" << std::endl;
+  api::Sort type =
+      api::Sort(d_solver, d_solver->getExprManager()->mkSort(name, flags));
   bool globalDecls = d_symman->getGlobalDeclarations();
-  api::Sort type = d_solver->mkUninterpretedSort(name);
-  defineType(name, type, globalDecls);
+  defineType(
+      name, type, globalDecls && !(flags & ExprManager::SORT_FLAG_PLACEHOLDER));
   return type;
 }
 
-api::Sort Parser::mkSortConstructor(const std::string& name, size_t arity)
+api::Sort Parser::mkSortConstructor(const std::string& name,
+                                    size_t arity,
+                                    uint32_t flags)
 {
   Debug("parser") << "newSortConstructor(" << name << ", " << arity << ")"
                   << std::endl;
+  api::Sort type = api::Sort(
+      d_solver,
+      d_solver->getExprManager()->mkSortConstructor(name, arity, flags));
   bool globalDecls = d_symman->getGlobalDeclarations();
-  api::Sort type = d_solver->mkSortConstructorSort(name, arity);
-  defineType(name, vector<api::Sort>(arity), type, globalDecls);
+  defineType(name,
+             vector<api::Sort>(arity),
+             type,
+             globalDecls && !(flags & ExprManager::SORT_FLAG_PLACEHOLDER));
   return type;
 }
 
 api::Sort Parser::mkUnresolvedType(const std::string& name)
 {
-  api::Sort unresolved = d_solver->mkUninterpretedSort(name);
-  defineType(name, unresolved);
+  api::Sort unresolved = mkSort(name, ExprManager::SORT_FLAG_PLACEHOLDER);
   d_unresolved.insert(unresolved);
   return unresolved;
 }
@@ -336,8 +370,8 @@ api::Sort Parser::mkUnresolvedType(const std::string& name)
 api::Sort Parser::mkUnresolvedTypeConstructor(const std::string& name,
                                               size_t arity)
 {
-  api::Sort unresolved = d_solver->mkSortConstructorSort(name, arity);
-  defineType(name, vector<api::Sort>(arity), unresolved);
+  api::Sort unresolved =
+      mkSortConstructor(name, arity, ExprManager::SORT_FLAG_PLACEHOLDER);
   d_unresolved.insert(unresolved);
   return unresolved;
 }
@@ -347,7 +381,10 @@ api::Sort Parser::mkUnresolvedTypeConstructor(
 {
   Debug("parser") << "newSortConstructor(P)(" << name << ", " << params.size()
                   << ")" << std::endl;
-  api::Sort unresolved = d_solver->mkSortConstructorSort(name, params.size());
+  api::Sort unresolved =
+      api::Sort(d_solver,
+                d_solver->getExprManager()->mkSortConstructor(
+                    name, params.size(), ExprManager::SORT_FLAG_PLACEHOLDER));
   defineType(name, params, unresolved);
   api::Sort t = getSort(name, params);
   d_unresolved.insert(unresolved);
@@ -604,14 +641,31 @@ api::Term Parser::applyTypeAscription(api::Term t, api::Sort s)
   return t;
 }
 
+//!!!!!!!!!!! temporary
+api::Term Parser::mkVar(const std::string& name,
+                        const api::Sort& type,
+                        uint32_t flags)
+{
+  return api::Term(
+      d_solver, d_solver->getExprManager()->mkVar(name, type.getType(), flags));
+}
+//!!!!!!!!!!! temporary
+
 bool Parser::isDeclared(const std::string& name, SymbolType type) {
   switch (type) {
-    case SYM_VARIABLE: return d_symtab->isBound(name);
+    case SYM_VARIABLE:
+      return d_reservedSymbols.find(name) != d_reservedSymbols.end() ||
+             d_symtab->isBound(name);
     case SYM_SORT:
       return d_symtab->isBoundType(name);
   }
   assert(false);  // Unhandled(type);
   return false;
+}
+
+void Parser::reserveSymbolAtAssertionLevel(const std::string& varName) {
+  checkDeclaration(varName, CHECK_UNDECLARED, SYM_VARIABLE);
+  d_reservedSymbols.insert(varName);
 }
 
 void Parser::checkDeclaration(const std::string& varName,
@@ -721,17 +775,26 @@ void Parser::attributeNotSupported(const std::string& attr) {
 
 size_t Parser::scopeLevel() const { return d_symman->scopeLevel(); }
 
-void Parser::pushScope(bool isUserContext)
+void Parser::pushScope(bool bindingLevel)
 {
-  d_symman->pushScope(isUserContext);
+  d_symman->pushScope(!bindingLevel);
+  if (!bindingLevel)
+  {
+    d_assertionLevel = scopeLevel();
+  }
 }
 
 void Parser::popScope()
 {
   d_symman->popScope();
+  if (scopeLevel() < d_assertionLevel)
+  {
+    d_assertionLevel = scopeLevel();
+    d_reservedSymbols.clear();
+  }
 }
 
-void Parser::reset() {}
+void Parser::reset() { d_symman->reset(); }
 
 SymbolManager* Parser::getSymbolManager() { return d_symman; }
 
@@ -874,11 +937,11 @@ api::Term Parser::mkStringConstant(const std::string& s)
 {
   if (language::isInputLang_smt2_6(d_solver->getOptions().getInputLanguage()))
   {
-    return d_solver->mkString(s, true);
+    return api::Term(d_solver, d_solver->mkString(s, true).getExpr());
   }
   // otherwise, we must process ad-hoc escape sequences
   std::vector<unsigned> str = processAdHocStringEsc(s);
-  return d_solver->mkString(str);
+  return api::Term(d_solver, d_solver->mkString(str).getExpr());
 }
 
 } /* CVC4::parser namespace */

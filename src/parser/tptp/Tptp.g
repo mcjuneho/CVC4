@@ -61,6 +61,7 @@ options {
 }/* @lexer::includes */
 
 @lexer::postinclude {
+#include <stdint.h>
 
 #include "parser/tptp/tptp.h"
 #include "parser/antlr_input.h"
@@ -102,6 +103,9 @@ using namespace CVC4::parser;
 
 #include "api/cvc4cpp.h"
 #include "base/output.h"
+#include "expr/expr.h"
+#include "expr/kind.h"
+#include "expr/type.h"
 #include "parser/antlr_input.h"
 #include "parser/parser.h"
 #include "parser/tptp/tptp.h"
@@ -117,8 +121,6 @@ using namespace CVC4::parser;
 #define PARSER_STATE ((Tptp*)PARSER->super)
 #undef SOLVER
 #define SOLVER PARSER_STATE->getSolver()
-#undef SYM_MAN
-#define SYM_MAN PARSER_STATE->getSymbolManager()
 #undef MK_TERM
 #define MK_TERM SOLVER->mkTerm
 #define UNSUPPORTED PARSER_STATE->unimplementedFeature
@@ -162,7 +164,9 @@ parseCommand returns [CVC4::Command* cmd = NULL]
       CVC4::api::Term aexpr = PARSER_STATE->getAssertionExpr(fr, expr);
       if( !aexpr.isNull() ){
         // set the expression name (e.g. used with unsat core printing)
-        SYM_MAN->setExpressionName(aexpr, name, true);
+        Command* csen = new SetExpressionNameCommand(aexpr, name);
+        csen->setMuted(true);
+        PARSER_STATE->preemptCommand(csen);
       }
       // make the command to assert the formula
       cmd = PARSER_STATE->makeAssertCommand(fr, aexpr, /* cnf == */ true, true);
@@ -174,7 +178,9 @@ parseCommand returns [CVC4::Command* cmd = NULL]
       CVC4::api::Term aexpr = PARSER_STATE->getAssertionExpr(fr,expr);
       if( !aexpr.isNull() ){
         // set the expression name (e.g. used with unsat core printing)
-        SYM_MAN->setExpressionName(aexpr, name, true);
+        Command* csen = new SetExpressionNameCommand(aexpr, name);
+        csen->setMuted(true);
+        PARSER_STATE->preemptCommand(csen);
       }
       // make the command to assert the formula
       cmd = PARSER_STATE->makeAssertCommand(fr, aexpr, /* cnf == */ false, true);
@@ -188,7 +194,9 @@ parseCommand returns [CVC4::Command* cmd = NULL]
         CVC4::api::Term aexpr = PARSER_STATE->getAssertionExpr(fr,expr);
         if( !aexpr.isNull() ){
           // set the expression name (e.g. used with unsat core printing)
-          SYM_MAN->setExpressionName(aexpr, name, true);
+          Command* csen = new SetExpressionNameCommand(aexpr, name);
+          csen->setMuted(true);
+          PARSER_STATE->preemptCommand(csen);
         }
         // make the command to assert the formula
         cmd = PARSER_STATE->makeAssertCommand(fr, aexpr, /* cnf == */ false, true);
@@ -211,7 +219,9 @@ parseCommand returns [CVC4::Command* cmd = NULL]
         if (!aexpr.isNull())
         {
           // set the expression name (e.g. used with unsat core printing)
-          SYM_MAN->setExpressionName(aexpr, name, true);
+          Command* csen = new SetExpressionNameCommand(aexpr, name);
+          csen->setMuted(true);
+          PARSER_STATE->preemptCommand(csen);
         }
         // make the command to assert the formula
         cmd = PARSER_STATE->makeAssertCommand(
@@ -256,7 +266,7 @@ parseCommand returns [CVC4::Command* cmd = NULL]
       if(filename.substr(filename.length() - 2) == ".p") {
         filename = filename.substr(0, filename.length() - 2);
       }
-      seq->addCommand(new SetInfoCommand("filename", filename));
+      seq->addCommand(new SetInfoCommand("filename", SExpr(filename)));
       if(PARSER_STATE->hasConjecture()) {
         seq->addCommand(new QueryCommand(SOLVER->mkFalse()));
       } else {
@@ -918,7 +928,7 @@ thfQuantifier[CVC4::api::Kind& kind]
   | LAMBDA_TOK { kind = api::LAMBDA; }
   | CHOICE_TOK
     {
-      UNSUPPORTED("Choice operator");
+        UNSUPPORTED("Choice operator");
     }
   | DEF_DESC_TOK
     {
@@ -1429,11 +1439,7 @@ tffLetTermBinding[std::vector<CVC4::api::Term> & bvlist,
     PARSER_STATE->checkLetBinding(bvlist, lhs, rhs, false);
     std::vector<api::Term> lchildren(++lhs.begin(), lhs.end());
     rhs = MK_TERM(api::LAMBDA, MK_TERM(api::BOUND_VAR_LIST, lchildren), rhs);
-    // since lhs is always APPLY_UF (otherwise we'd have had a parser error in
-    // checkLetBinding) the function to be replaced is always the first
-    // argument. Note that the way in which lchildren is built above is also
-    // relying on this.
-    lhs = lhs[0];
+    lhs = api::Term(SOLVER, lhs.getExpr().getOperator());
   }
   | LPAREN_TOK tffLetTermBinding[bvlist, lhs, rhs] RPAREN_TOK
   ;
@@ -1455,11 +1461,7 @@ tffLetFormulaBinding[std::vector<CVC4::api::Term> & bvlist,
     PARSER_STATE->checkLetBinding(bvlist, lhs, rhs, true);
     std::vector<api::Term> lchildren(++lhs.begin(), lhs.end());
     rhs = MK_TERM(api::LAMBDA, MK_TERM(api::BOUND_VAR_LIST, lchildren), rhs);
-    // since lhs is always APPLY_UF (otherwise we'd have had a parser error in
-    // checkLetBinding) the function to be replaced is always the first
-    // argument. Note that the way in which lchildren is built above is also
-    // relying on this.
-    lhs = lhs[0];
+    lhs = api::Term(SOLVER, lhs.getExpr().getOperator());
   }
   | LPAREN_TOK tffLetFormulaBinding[bvlist, lhs, rhs] RPAREN_TOK
   ;
@@ -1626,7 +1628,7 @@ NOT_TOK        : '~';
 FORALL_TOK     : '!';
 EXISTS_TOK     : '?';
 LAMBDA_TOK     : '^';
-CHOICE_TOK     : '@+';
+WITNESS_TOK     : '@+';
 DEF_DESC_TOK   : '@-';
 AND_TOK        : '&';
 IFF_TOK        : '<=>';

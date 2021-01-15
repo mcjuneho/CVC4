@@ -82,6 +82,7 @@
 #ifndef CVC4__CONTEXT__CDHASHMAP_H
 #define CVC4__CONTEXT__CDHASHMAP_H
 
+#include <cstddef>
 #include <functional>
 #include <iterator>
 #include <unordered_map>
@@ -417,7 +418,6 @@ public:
 
     // Dereference operators.
     const value_type& operator*() const { return d_it->getValue(); }
-    const value_type* operator->() const { return &d_it->getValue(); }
 
     // Prefix increment
     iterator& operator++()

@@ -131,10 +131,10 @@ bool InferInfo::isFact() const
   return !atom.isConst() && atom.getKind() != kind::OR && d_noExplain.empty();
 }
 
-Node InferInfo::getPremises() const
+Node InferInfo::getAntecedant() const
 {
   // d_noExplain is a subset of d_ant
-  return utils::mkAnd(d_premises);
+  return utils::mkAnd(d_ant);
 }
 
 std::ostream& operator<<(std::ostream& out, const InferInfo& ii)
@@ -144,9 +144,9 @@ std::ostream& operator<<(std::ostream& out, const InferInfo& ii)
   {
     out << " :rev";
   }
-  if (!ii.d_premises.empty())
+  if (!ii.d_ant.empty())
   {
-    out << " :ant (" << ii.d_premises << ")";
+    out << " :ant (" << ii.d_ant << ")";
   }
   if (!ii.d_noExplain.empty())
   {

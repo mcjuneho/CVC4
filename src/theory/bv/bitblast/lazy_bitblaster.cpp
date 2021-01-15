@@ -85,7 +85,7 @@ TLazyBitblaster::TLazyBitblaster(context::Context* c,
                                         d_nullContext.get(),
                                         nullptr,
                                         rm,
-                                        prop::FormulaLitPolicy::INTERNAL,
+                                        false,
                                         "LazyBitblaster"));
 
   d_satSolverNotify.reset(

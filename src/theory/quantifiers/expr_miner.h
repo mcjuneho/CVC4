@@ -21,7 +21,8 @@
 #include <memory>
 #include <vector>
 
-#include "expr/node.h"
+#include "expr/expr.h"
+#include "expr/expr_manager.h"
 #include "smt/smt_engine.h"
 #include "theory/quantifiers/sygus_sampler.h"
 

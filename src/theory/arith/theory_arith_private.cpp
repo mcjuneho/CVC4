@@ -2,7 +2,7 @@
 /*! \file theory_arith_private.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Alex Ozdemir, Andrew Reynolds
+ **   Tim King, Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -16,6 +16,8 @@
  **/
 
 #include "theory/arith/theory_arith_private.h"
+
+#include <stdint.h>
 
 #include <map>
 #include <queue>
@@ -1471,9 +1473,8 @@ ArithVar TheoryArithPrivate::requestArithVar(TNode x, bool aux, bool internal){
   Assert(isLeaf(x) || VarList::isMember(x) || x.getKind() == PLUS || internal);
   if(getLogicInfo().isLinear() && Variable::isDivMember(x)){
     stringstream ss;
-    ss << "A non-linear fact (involving div/mod/divisibility) was asserted to "
-          "arithmetic in a linear logic: "
-       << x << std::endl;
+    ss << "A non-linear fact (involving div/mod/divisibility) was asserted to arithmetic in a linear logic: " << x << endl
+       << "if you only use division (or modulus) by a constant value, or if you only use the divisibility-by-k predicate, try using the --rewrite-divk option.";
     throw LogicException(ss.str());
   }
   Assert(!d_partialModel.hasArithVar(x));
@@ -3193,6 +3194,7 @@ bool TheoryArithPrivate::solveRealRelaxation(Theory::Effort effortLevel){
 //           int maxDepth =
 //             d_likelyIntegerInfeasible ? 1 : options::arithMaxBranchDepth();
 
+
 //           if(d_likelyIntegerInfeasible){
 //             d_qflraStatus = d_attemptSolSimplex.attempt(relaxSolution);
 //           }else{
@@ -3202,7 +3204,7 @@ bool TheoryArithPrivate::solveRealRelaxation(Theory::Effort effortLevel){
 //               mipRes = approxSolver->solveMIP(true);
 //             }
 //             d_errorSet.reduceToSignals();
-//             //CVC4Message() << "here" << endl;
+//             //Message() << "here" << endl;
 //             if(mipRes == ApproximateSimplex::ApproxSat){
 //               mipSolution = approxSolver->extractMIP();
 //               d_qflraStatus = d_attemptSolSimplex.attempt(mipSolution);
@@ -3218,15 +3220,13 @@ bool TheoryArithPrivate::solveRealRelaxation(Theory::Effort effortLevel){
 //             }
 //           }
 //           options::arithStandardCheckVarOrderPivots.set(pass2Limit);
-//           if(d_qflraStatus != Result::UNSAT){ d_qflraStatus =
-//           simplex.findModel(false); }
-//           //CVC4Message() << "done" << endl;
+//           if(d_qflraStatus != Result::UNSAT){ d_qflraStatus = simplex.findModel(false); }
+//           //Message() << "done" << endl;
 //         }
 //         break;
 //       case ApproximateSimplex::ApproxUnsat:
 //         {
-//           ApproximateSimplex::Solution sol =
-//           approxSolver->extractRelaxation();
+//           ApproximateSimplex::Solution sol = approxSolver->extractRelaxation();
 
 //           d_qflraStatus = d_attemptSolSimplex.attempt(sol);
 //           options::arithStandardCheckVarOrderPivots.set(pass2Limit);
@@ -3246,13 +3246,13 @@ bool TheoryArithPrivate::solveRealRelaxation(Theory::Effort effortLevel){
 //   }else{
 
 //     if(d_qflraStatus == Result::SAT_UNKNOWN){
-//       //CVC4Message() << "got sat unknown" << endl;
+//       //Message() << "got sat unknown" << endl;
 //       vector<ArithVar> toCut = cutAllBounded();
 //       if(toCut.size() > 0){
 //         //branchVector(toCut);
 //         emmittedConflictOrSplit = true;
 //       }else{
-//         //CVC4Message() << "splitting" << endl;
+//         //Message() << "splitting" << endl;
 
 //         d_qflraStatus = simplex.findModel(noPivotLimit);
 //       }
@@ -3478,14 +3478,6 @@ bool TheoryArithPrivate::postCheck(Theory::Effort effortLevel)
     Unimplemented();
   }
   d_statistics.d_avgUnknownsInARow.addEntry(d_unknownsInARow);
-
-  size_t nPivots =
-      options::useFC() ? d_fcSimplex.getPivots() : d_dualSimplex.getPivots();
-  for (std::size_t i = 0; i < nPivots; ++i)
-  {
-    d_containing.d_out->spendResource(
-        ResourceManager::Resource::ArithPivotStep);
-  }
 
   Debug("arith::ems") << "ems: " << emmittedConflictOrSplit
                       << "pre approx cuts" << endl;
@@ -3848,12 +3840,12 @@ TrustNode TheoryArithPrivate::explain(TNode n)
   TrustNode exp;
   if(c != NullConstraint){
     Assert(!c->isAssumption());
-    exp = c->externalExplainForPropagation(n);
+    exp = c->externalExplainForPropagation();
     Debug("arith::explain") << "constraint explanation" << n << ":" << exp << endl;
   }else if(d_assertionsThatDoNotMatchTheirLiterals.find(n) != d_assertionsThatDoNotMatchTheirLiterals.end()){
     c = d_assertionsThatDoNotMatchTheirLiterals[n];
     if(!c->isAssumption()){
-      exp = c->externalExplainForPropagation(n);
+      exp = c->externalExplainForPropagation();
       Debug("arith::explain") << "assertions explanation" << n << ":" << exp << endl;
     }else{
       Debug("arith::explain") << "this is a strange mismatch" << n << endl;

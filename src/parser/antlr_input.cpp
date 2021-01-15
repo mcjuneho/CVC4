@@ -18,8 +18,10 @@
 
 #include <antlr3.h>
 #include <limits.h>
+#include <stdint.h>
 
 #include "base/output.h"
+#include "expr/type.h"
 #include "parser/antlr_line_buffered_input.h"
 #include "parser/bounded_token_buffer.h"
 #include "parser/bounded_token_factory.h"

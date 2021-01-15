@@ -15,6 +15,7 @@
 #include "smt/listeners.h"
 
 #include "expr/attribute.h"
+#include "expr/expr.h"
 #include "expr/node_manager_attributes.h"
 #include "options/smt_options.h"
 #include "printer/printer.h"
@@ -45,9 +46,9 @@ SmtNodeManagerListener::SmtNodeManagerListener(DumpManager& dm,
 void SmtNodeManagerListener::nmNotifyNewSort(TypeNode tn, uint32_t flags)
 {
   DeclareTypeNodeCommand c(tn.getAttribute(expr::VarNameAttr()), 0, tn);
-  if ((flags & NodeManager::SORT_FLAG_PLACEHOLDER) == 0)
+  if ((flags & ExprManager::SORT_FLAG_PLACEHOLDER) == 0)
   {
-    d_dm.addToDump(c);
+    d_dm.addToModelCommandAndDump(c, flags);
   }
 }
 
@@ -57,9 +58,9 @@ void SmtNodeManagerListener::nmNotifyNewSortConstructor(TypeNode tn,
   DeclareTypeNodeCommand c(tn.getAttribute(expr::VarNameAttr()),
                            tn.getAttribute(expr::SortArityAttr()),
                            tn);
-  if ((flags & NodeManager::SORT_FLAG_PLACEHOLDER) == 0)
+  if ((flags & ExprManager::SORT_FLAG_PLACEHOLDER) == 0)
   {
-    d_dm.addToDump(c);
+    d_dm.addToModelCommandAndDump(c);
   }
 }
 
@@ -76,15 +77,18 @@ void SmtNodeManagerListener::nmNotifyNewDatatypes(
       }
     }
     DeclareDatatypeNodeCommand c(dtts);
-    d_dm.addToDump(c);
+    d_dm.addToModelCommandAndDump(c);
   }
 }
 
-void SmtNodeManagerListener::nmNotifyNewVar(TNode n)
+void SmtNodeManagerListener::nmNotifyNewVar(TNode n, uint32_t flags)
 {
   DeclareFunctionNodeCommand c(
       n.getAttribute(expr::VarNameAttr()), n, n.getType());
-  d_dm.addToDump(c);
+  if ((flags & ExprManager::VAR_FLAG_DEFINED) == 0)
+  {
+    d_dm.addToModelCommandAndDump(c, flags);
+  }
 }
 
 void SmtNodeManagerListener::nmNotifyNewSkolem(TNode n,
@@ -98,7 +102,10 @@ void SmtNodeManagerListener::nmNotifyNewSkolem(TNode n,
     d_outMgr.getPrinter().toStreamCmdComment(d_outMgr.getDumpOut(),
                                              id + " is " + comment);
   }
-  d_dm.addToDump(c, "skolems");
+  if ((flags & ExprManager::VAR_FLAG_DEFINED) == 0)
+  {
+    d_dm.addToModelCommandAndDump(c, flags, false, "skolems");
+  }
 }
 
 }  // namespace smt

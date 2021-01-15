@@ -2,7 +2,7 @@
 /*! \file tptp_printer.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King, Abdalrhman Mohamed
+ **   Tim King, Abdalrhman Mohamed, Morgan Deters
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -44,21 +44,9 @@ class TptpPrinter : public CVC4::Printer
   void toStream(std::ostream& out, const UnsatCore& core) const override;
 
  private:
-  /**
-   * To stream model sort. This prints the appropriate output for type
-   * tn declared via declare-sort or declare-datatype.
-   */
-  void toStreamModelSort(std::ostream& out,
-                         const smt::Model& m,
-                         TypeNode tn) const override;
-
-  /**
-   * To stream model term. This prints the appropriate output for term
-   * n declared via declare-fun.
-   */
-  void toStreamModelTerm(std::ostream& out,
-                         const smt::Model& m,
-                         Node n) const override;
+  void toStream(std::ostream& out,
+                const smt::Model& m,
+                const NodeCommand* c) const override;
 
 }; /* class TptpPrinter */
 

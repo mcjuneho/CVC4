@@ -158,6 +158,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <stdint.h>
 #include <vector>
 
 namespace CVC4 {

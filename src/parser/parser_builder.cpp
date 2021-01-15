@@ -2,7 +2,7 @@
 /*! \file parser_builder.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Christopher L. Conway, Morgan Deters, Andrew Reynolds
+ **   Christopher L. Conway, Morgan Deters, Aina Niemetz
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -23,6 +23,7 @@
 
 #include "api/cvc4cpp.h"
 #include "cvc/cvc.h"
+#include "expr/expr_manager.h"
 #include "options/options.h"
 #include "parser/input.h"
 #include "parser/parser.h"

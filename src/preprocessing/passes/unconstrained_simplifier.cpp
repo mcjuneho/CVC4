@@ -34,7 +34,8 @@ UnconstrainedSimplifier::UnconstrainedSimplifier(
     : PreprocessingPass(preprocContext, "unconstrained-simplifier"),
       d_numUnconstrainedElim("preprocessor::number of unconstrained elims", 0),
       d_context(preprocContext->getDecisionContext()),
-      d_substitutions(preprocContext->getDecisionContext())
+      d_substitutions(preprocContext->getDecisionContext()),
+      d_logicInfo(preprocContext->getLogicInfo())
 {
   smtStatisticsRegistry()->registerStat(&d_numUnconstrainedElim);
 }
@@ -358,8 +359,6 @@ void UnconstrainedSimplifier::processUnconstrained()
         case kind::BITVECTOR_SHL:
         case kind::BITVECTOR_LSHR:
         case kind::BITVECTOR_ASHR:
-        case kind::BITVECTOR_UDIV:
-        case kind::BITVECTOR_UREM:
         case kind::BITVECTOR_UDIV_TOTAL:
         case kind::BITVECTOR_UREM_TOTAL:
         case kind::BITVECTOR_SDIV:
@@ -589,7 +588,7 @@ void UnconstrainedSimplifier::processUnconstrained()
         // Uninterpreted function - if domain is infinite, no quantifiers are
         // used, and any child is unconstrained, result is unconstrained
         case kind::APPLY_UF:
-          if (d_preprocContext->getLogicInfo().isQuantified()
+          if (d_logicInfo.isQuantified()
               || !current.getType().getCardinality().isInfinite())
           {
             break;
@@ -855,7 +854,7 @@ PreprocessingPassResult UnconstrainedSimplifier::applyInternal(
   if (!d_unconstrained.empty())
   {
     processUnconstrained();
-    //    d_substitutions.print(CVC4Message.getStream());
+    //    d_substitutions.print(Message.getStream());
     for (size_t i = 0, asize = assertions.size(); i < asize; ++i)
     {
       Node a = assertions[i];

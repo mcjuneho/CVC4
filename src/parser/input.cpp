@@ -20,6 +20,7 @@
 #include "parser/input.h"
 
 #include "base/output.h"
+#include "expr/type.h"
 #include "parser/parser.h"
 #include "parser/parser_exception.h"
 

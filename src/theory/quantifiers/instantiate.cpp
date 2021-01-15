@@ -683,7 +683,7 @@ void Instantiate::getInstantiatedQuantifiedFormulas(std::vector<Node>& qs)
 bool Instantiate::getUnsatCoreLemmas(std::vector<Node>& active_lemmas)
 {
   // only if unsat core available
-  if (options::unsatCores() && !isProofEnabled())
+  if (options::unsatCores())
   {
     if (!ProofManager::currentPM()->unsatCoreAvailable())
     {
@@ -714,39 +714,14 @@ bool Instantiate::getUnsatCoreLemmas(std::vector<Node>& active_lemmas)
 void Instantiate::getInstantiationTermVectors(
     Node q, std::vector<std::vector<Node> >& tvecs)
 {
-  // if track instantiations is true, we use the instantiation + explanation
-  // methods for doing minimization based on unsat cores.
-  if (options::trackInstLemmas())
+  std::vector<Node> lemmas;
+  getInstantiations(q, lemmas);
+  std::map<Node, Node> quant;
+  std::map<Node, std::vector<Node> > tvec;
+  getExplanationForInstLemmas(lemmas, quant, tvec);
+  for (std::pair<const Node, std::vector<Node> >& t : tvec)
   {
-    std::vector<Node> lemmas;
-    getInstantiations(q, lemmas);
-    std::map<Node, Node> quant;
-    std::map<Node, std::vector<Node> > tvec;
-    getExplanationForInstLemmas(lemmas, quant, tvec);
-    for (std::pair<const Node, std::vector<Node> >& t : tvec)
-    {
-      tvecs.push_back(t.second);
-    }
-    return;
-  }
-
-  if (options::incrementalSolving())
-  {
-    std::map<Node, inst::CDInstMatchTrie*>::const_iterator it =
-        d_c_inst_match_trie.find(q);
-    if (it != d_c_inst_match_trie.end())
-    {
-      it->second->getInstantiations(q, tvecs);
-    }
-  }
-  else
-  {
-    std::map<Node, inst::InstMatchTrie>::const_iterator it =
-        d_inst_match_trie.find(q);
-    if (it != d_inst_match_trie.end())
-    {
-      it->second.getInstantiations(q, tvecs);
-    }
+    tvecs.push_back(t.second);
   }
 }
 
@@ -755,14 +730,14 @@ void Instantiate::getInstantiationTermVectors(
 {
   if (options::incrementalSolving())
   {
-    for (const auto& t : d_c_inst_match_trie)
+    for (std::pair<const Node, inst::CDInstMatchTrie*>& t : d_c_inst_match_trie)
     {
       getInstantiationTermVectors(t.first, insts[t.first]);
     }
   }
   else
   {
-    for (const auto& t : d_inst_match_trie)
+    for (std::pair<const Node, inst::InstMatchTrie>& t : d_inst_match_trie)
     {
       getInstantiationTermVectors(t.first, insts[t.first]);
     }

@@ -1,5 +1,5 @@
 /*********************                                                        */
-/*! \file make_bag_op.cpp
+/*! \file bag_op.cpp
  ** \verbatim
  ** Top contributors (to current version):
  **   Mudathir Mohamed

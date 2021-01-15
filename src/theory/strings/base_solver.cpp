@@ -44,10 +44,8 @@ void BaseSolver::checkInit()
   d_termIndex.clear();
   d_stringsEqc.clear();
 
-  Trace("strings-base") << "BaseSolver::checkInit" << std::endl;
-  // count of congruent, non-congruent per operator (independent of type),
-  // for debugging.
-  std::map<Kind, std::pair<uint32_t, uint32_t>> congruentCount;
+  std::map<Kind, uint32_t> ncongruent;
+  std::map<Kind, uint32_t> congruent;
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
   while (!eqcs_i.isFinished())
@@ -57,8 +55,6 @@ void BaseSolver::checkInit()
     if (!tn.isRegExp())
     {
       Node emps;
-      // get the term index for type tn
-      std::map<Kind, TermIndex>& tti = d_termIndex[tn];
       if (tn.isStringLike())
       {
         d_stringsEqc.push_back(eqc);
@@ -70,7 +66,6 @@ void BaseSolver::checkInit()
       {
         Node n = *eqc_i;
         Kind k = n.getKind();
-        Trace("strings-base") << "initialize term: " << n << std::endl;
         // process constant-like terms
         if (utils::isConstantLike(n))
         {
@@ -141,17 +136,14 @@ void BaseSolver::checkInit()
             if (d_congruent.find(n) == d_congruent.end())
             {
               std::vector<Node> c;
-              Node nc = tti[k].add(n, 0, d_state, emps, c);
+              Node nc = d_termIndex[k].add(n, 0, d_state, emps, c);
               if (nc != n)
               {
-                Trace("strings-base-debug")
-                    << "...found congruent term " << nc << std::endl;
                 // check if we have inferred a new equality by removal of empty
                 // components
                 if (k == STRING_CONCAT && !d_state.areEqual(nc, n))
                 {
                   std::vector<Node> exp;
-                  // the number of empty components of n, nc
                   size_t count[2] = {0, 0};
                   while (count[0] < nc.getNumChildren()
                          || count[1] < n.getNumChildren())
@@ -171,9 +163,6 @@ void BaseSolver::checkInit()
                         count[t]++;
                       }
                     }
-                    Trace("strings-base-debug")
-                        << "  counts = " << count[0] << ", " << count[1]
-                        << std::endl;
                     // explain equal components
                     if (count[0] < nc.getNumChildren())
                     {
@@ -201,15 +190,15 @@ void BaseSolver::checkInit()
                   // assuming that the reduction of f(a) depends on itself.
                 }
                 // this node is congruent to another one, we can ignore it
-                Trace("strings-base-debug")
+                Trace("strings-process-debug")
                     << "  congruent term : " << n << " (via " << nc << ")"
                     << std::endl;
                 d_congruent.insert(n);
-                congruentCount[k].first++;
+                congruent[k]++;
               }
               else if (k == STRING_CONCAT && c.size() == 1)
               {
-                Trace("strings-base-debug")
+                Trace("strings-process-debug")
                     << "  congruent term by singular : " << n << " " << c[0]
                     << std::endl;
                 // singular case
@@ -240,16 +229,16 @@ void BaseSolver::checkInit()
                   d_im.sendInference(exp, n.eqNode(ns), Inference::I_NORM_S);
                 }
                 d_congruent.insert(n);
-                congruentCount[k].first++;
+                congruent[k]++;
               }
               else
               {
-                congruentCount[k].second++;
+                ncongruent[k]++;
               }
             }
             else
             {
-              congruentCount[k].first++;
+              congruent[k]++;
             }
           }
         }
@@ -265,14 +254,14 @@ void BaseSolver::checkInit()
             }
             else if (var > n)
             {
-              Trace("strings-base-debug")
+              Trace("strings-process-debug")
                   << "  congruent variable : " << var << std::endl;
               d_congruent.insert(var);
               var = n;
             }
             else
             {
-              Trace("strings-base-debug")
+              Trace("strings-process-debug")
                   << "  congruent variable : " << n << std::endl;
               d_congruent.insert(n);
             }
@@ -283,17 +272,17 @@ void BaseSolver::checkInit()
     }
     ++eqcs_i;
   }
-  if (Trace.isOn("strings-base"))
+  if (Trace.isOn("strings-process"))
   {
-    for (const std::pair<const Kind, std::pair<uint32_t, uint32_t>>& cc :
-         congruentCount)
+    for (std::map<Kind, TermIndex>::iterator it = d_termIndex.begin();
+         it != d_termIndex.end();
+         ++it)
     {
-      Trace("strings-base")
-          << "  Terms[" << cc.first << "] = " << cc.second.second << "/"
-          << (cc.second.first + cc.second.second) << std::endl;
+      Trace("strings-process")
+          << "  Terms[" << it->first << "] = " << ncongruent[it->first] << "/"
+          << (congruent[it->first] + ncongruent[it->first]) << std::endl;
     }
   }
-  Trace("strings-base") << "BaseSolver::checkInit finished" << std::endl;
 }
 
 void BaseSolver::checkConstantEquivalenceClasses()
@@ -304,27 +293,17 @@ void BaseSolver::checkConstantEquivalenceClasses()
   do
   {
     vecc.clear();
-    Trace("strings-base-debug")
+    Trace("strings-process-debug")
         << "Check constant equivalence classes..." << std::endl;
     prevSize = d_eqcInfo.size();
-    for (std::pair<const TypeNode, std::map<Kind, TermIndex>>& tindex :
-         d_termIndex)
-    {
-      checkConstantEquivalenceClasses(
-          &tindex.second[STRING_CONCAT], vecc, true);
-    }
+    checkConstantEquivalenceClasses(&d_termIndex[STRING_CONCAT], vecc, true);
   } while (!d_im.hasProcessed() && d_eqcInfo.size() > prevSize);
 
   if (!d_im.hasProcessed())
   {
     // now, go back and set "most content" terms
     vecc.clear();
-    for (std::pair<const TypeNode, std::map<Kind, TermIndex>>& tindex :
-         d_termIndex)
-    {
-      checkConstantEquivalenceClasses(
-          &tindex.second[STRING_CONCAT], vecc, false);
-    }
+    checkConstantEquivalenceClasses(&d_termIndex[STRING_CONCAT], vecc, false);
   }
 }
 

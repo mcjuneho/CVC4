@@ -18,8 +18,6 @@
 #define CVC4__THEORY__STRINGS__REGEXP_ELIM_H
 
 #include "expr/node.h"
-#include "theory/eager_proof_generator.h"
-#include "theory/trust_node.h"
 
 namespace CVC4 {
 namespace theory {
@@ -35,32 +33,14 @@ namespace strings {
 class RegExpElimination
 {
  public:
-  /**
-   * @param isAgg Whether aggressive eliminations are enabled
-   * @param pnm The proof node manager to use (for proofs)
-   * @param c The context to use (for proofs)
-   */
-  RegExpElimination(bool isAgg = false,
-                    ProofNodeManager* pnm = nullptr,
-                    context::Context* c = nullptr);
+  RegExpElimination();
   /** eliminate membership
    *
    * This method takes as input a regular expression membership atom of the
    * form (str.in.re x R). If this method returns a non-null node ret, then ret
    * is equivalent to atom.
-   *
-   * @param atom The node to eliminate
-   * @param isAgg Whether we apply aggressive elimination techniques
-   * @return The node with regular expressions eliminated, or null if atom
-   * was unchanged.
    */
-  static Node eliminate(Node atom, bool isAgg);
-
-  /**
-   * Return the trust node corresponding to rewriting n based on eliminate
-   * above.
-   */
-  TrustNode eliminateTrusted(Node atom);
+  static Node eliminate(Node atom);
 
  private:
   /** return elimination
@@ -70,17 +50,9 @@ class RegExpElimination
    */
   static Node returnElim(Node atom, Node atomElim, const char* id);
   /** elimination for regular expression concatenation */
-  static Node eliminateConcat(Node atom, bool isAgg);
+  static Node eliminateConcat(Node atom);
   /** elimination for regular expression star */
-  static Node eliminateStar(Node atom, bool isAgg);
-  /** Are proofs enabled? */
-  bool isProofEnabled() const;
-  /** Are aggressive eliminations enabled? */
-  bool d_isAggressive;
-  /** Pointer to the proof node manager */
-  ProofNodeManager* d_pnm;
-  /** An eager proof generator for storing proofs in eliminate trusted above */
-  std::unique_ptr<EagerProofGenerator> d_epg;
+  static Node eliminateStar(Node atom);
 }; /* class RegExpElimination */
 
 }  // namespace strings

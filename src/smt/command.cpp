@@ -2,7 +2,7 @@
 /*! \file command.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Abdalrhman Mohamed, Morgan Deters
+ **   Tim King, Morgan Deters, Andrew Reynolds
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -29,7 +29,7 @@
 #include "expr/expr_iomanip.h"
 #include "expr/node.h"
 #include "expr/symbol_manager.h"
-#include "expr/type_node.h"
+#include "expr/type.h"
 #include "options/options.h"
 #include "options/smt_options.h"
 #include "printer/printer.h"
@@ -44,43 +44,6 @@
 using namespace std;
 
 namespace CVC4 {
-
-std::string sexprToString(api::Term sexpr)
-{
-  // if sexpr is a spec constant and not a string, return the result of calling
-  // Term::toString
-  if (sexpr.getKind() == api::CONST_BOOLEAN
-      || sexpr.getKind() == api::CONST_FLOATINGPOINT
-      || sexpr.getKind() == api::CONST_RATIONAL)
-  {
-    return sexpr.toString();
-  }
-
-  // if sexpr is a constant string, return the result of calling Term::toString.
-  // However, strip the surrounding quotes
-  if (sexpr.getKind() == api::CONST_STRING)
-  {
-    return sexpr.toString().substr(1, sexpr.toString().length() - 2);
-  }
-
-  // if sexpr is not a spec constant, make sure it is an array of sub-sexprs
-  Assert(sexpr.getKind() == api::SEXPR);
-
-  std::stringstream ss;
-  auto it = sexpr.begin();
-
-  // recursively print the sub-sexprs
-  ss << '(' << sexprToString(*it);
-  ++it;
-  while (it != sexpr.end())
-  {
-    ss << ' ' << sexprToString(*it);
-    ++it;
-  }
-  ss << ')';
-
-  return ss.str();
-}
 
 const int CommandPrintSuccess::s_iosIndex = std::ios_base::xalloc();
 const CommandSuccess* CommandSuccess::s_instance = new CommandSuccess();
@@ -173,6 +136,11 @@ std::ostream& operator<<(std::ostream& out, CommandPrintSuccess cps)
 /* -------------------------------------------------------------------------- */
 
 Command::Command() : d_commandStatus(nullptr), d_muted(false) {}
+
+Command::Command(const api::Solver* solver)
+    : d_commandStatus(nullptr), d_muted(false)
+{
+}
 
 Command::Command(const Command& cmd)
 {
@@ -685,11 +653,11 @@ void SynthFunCommand::toStream(std::ostream& out,
   std::vector<Node> nodeVars = termVectorToNodes(d_vars);
   Printer::getPrinter(language)->toStreamCmdSynthFun(
       out,
-      d_fun.getNode(),
+      d_symbol,
       nodeVars,
+      d_sort.getTypeNode(),
       d_isInv,
-      d_grammar == nullptr ? TypeNode::null()
-                           : d_grammar->resolve().getTypeNode());
+      d_grammar->resolve().getTypeNode());
 }
 
 /* -------------------------------------------------------------------------- */
@@ -869,7 +837,6 @@ void ResetCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    sm->reset();
     solver->getSmtEngine()->reset();
     d_commandStatus = CommandSuccess::instance();
   }
@@ -898,7 +865,6 @@ void ResetAssertionsCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    sm->resetAssertions();
     solver->resetAssertions();
     d_commandStatus = CommandSuccess::instance();
   }
@@ -1103,17 +1069,28 @@ DeclareFunctionCommand::DeclareFunctionCommand(const std::string& id,
                                                api::Sort sort)
     : DeclarationDefinitionCommand(id),
       d_func(func),
-      d_sort(sort)
+      d_sort(sort),
+      d_printInModel(true),
+      d_printInModelSetByUser(false)
 {
 }
 
 api::Term DeclareFunctionCommand::getFunction() const { return d_func; }
 api::Sort DeclareFunctionCommand::getSort() const { return d_sort; }
+bool DeclareFunctionCommand::getPrintInModel() const { return d_printInModel; }
+bool DeclareFunctionCommand::getPrintInModelSetByUser() const
+{
+  return d_printInModelSetByUser;
+}
+
+void DeclareFunctionCommand::setPrintInModel(bool p)
+{
+  d_printInModel = p;
+  d_printInModelSetByUser = true;
+}
 
 void DeclareFunctionCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
-  // mark that it will be printed in the model
-  sm->addModelDeclarationTerm(d_func);
   d_commandStatus = CommandSuccess::instance();
 }
 
@@ -1121,6 +1098,8 @@ Command* DeclareFunctionCommand::clone() const
 {
   DeclareFunctionCommand* dfc =
       new DeclareFunctionCommand(d_symbol, d_func, d_sort);
+  dfc->d_printInModel = d_printInModel;
+  dfc->d_printInModelSetByUser = d_printInModelSetByUser;
   return dfc;
 }
 
@@ -1153,8 +1132,6 @@ size_t DeclareSortCommand::getArity() const { return d_arity; }
 api::Sort DeclareSortCommand::getSort() const { return d_sort; }
 void DeclareSortCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
-  // mark that it will be printed in the model
-  sm->addModelDeclarationSort(d_sort);
   d_commandStatus = CommandSuccess::instance();
 }
 
@@ -1173,8 +1150,8 @@ void DeclareSortCommand::toStream(std::ostream& out,
                                   size_t dag,
                                   OutputLanguage language) const
 {
-  Printer::getPrinter(language)->toStreamCmdDeclareType(out,
-                                                        d_sort.getTypeNode());
+  Printer::getPrinter(language)->toStreamCmdDeclareType(
+      out, d_sort.toString(), d_arity, d_sort.getTypeNode());
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1297,6 +1274,57 @@ void DefineFunctionCommand::toStream(std::ostream& out,
       d_func.toString(),
       api::termVectorToNodes(d_formals),
       d_func.getNode().getType().getRangeType(),
+      d_formula.getNode());
+}
+
+/* -------------------------------------------------------------------------- */
+/* class DefineNamedFunctionCommand                                           */
+/* -------------------------------------------------------------------------- */
+
+DefineNamedFunctionCommand::DefineNamedFunctionCommand(
+
+    const std::string& id,
+    api::Term func,
+    const std::vector<api::Term>& formals,
+    api::Term formula,
+    bool global)
+    : DefineFunctionCommand(id, func, formals, formula, global)
+{
+}
+
+void DefineNamedFunctionCommand::invoke(api::Solver* solver, SymbolManager* sm)
+{
+  this->DefineFunctionCommand::invoke(solver, sm);
+  if (!d_func.isNull() && d_func.getSort().isBoolean())
+  {
+    solver->getSmtEngine()->addToAssignment(d_func.getExpr());
+  }
+  d_commandStatus = CommandSuccess::instance();
+}
+
+Command* DefineNamedFunctionCommand::clone() const
+{
+  return new DefineNamedFunctionCommand(
+      d_symbol, d_func, d_formals, d_formula, d_global);
+}
+
+void DefineNamedFunctionCommand::toStream(std::ostream& out,
+                                          int toDepth,
+                                          size_t dag,
+                                          OutputLanguage language) const
+{
+  // get the range type of the function, or the type itself
+  // if its not a function
+  TypeNode range = d_func.getSort().getTypeNode();
+  if (range.isFunction())
+  {
+    range = range.getRangeType();
+  }
+  Printer::getPrinter(language)->toStreamCmdDefineNamedFunction(
+      out,
+      d_func.toString(),
+      api::termVectorToNodes(d_formals),
+      range,
       d_formula.getNode());
 }
 
@@ -1461,8 +1489,8 @@ void SetUserAttributeCommand::invoke(api::Solver* solver, SymbolManager* sm)
     {
       solver->getSmtEngine()->setUserAttribute(
           d_attr,
-          d_term.getNode(),
-          api::termVectorToNodes(d_termValues),
+          d_term.getExpr(),
+          api::termVectorToExprs(d_termValues),
           d_strValue);
     }
     d_commandStatus = CommandSuccess::instance();
@@ -1635,30 +1663,20 @@ void GetAssignmentCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    std::map<api::Term, std::string> enames = sm->getExpressionNames();
-    std::vector<api::Term> terms;
-    std::vector<std::string> names;
-    for (const std::pair<const api::Term, std::string>& e : enames)
+    std::vector<std::pair<Expr, Expr>> assignments =
+        solver->getSmtEngine()->getAssignment();
+    vector<SExpr> sexprs;
+    for (const auto& p : assignments)
     {
-      terms.push_back(e.first);
-      names.push_back(e.second);
-    }
-    // Must use vector version of getValue to ensure error is thrown regardless
-    // of whether terms is empty.
-    std::vector<api::Term> values = solver->getValue(terms);
-    Assert(values.size() == names.size());
-    std::vector<SExpr> sexprs;
-    for (size_t i = 0, nterms = terms.size(); i < nterms; i++)
-    {
-      std::vector<SExpr> ss;
-      ss.emplace_back(SExpr::Keyword(names[i]));
-      ss.emplace_back(SExpr::Keyword(values[i].toString()));
-      sexprs.emplace_back(ss);
+      vector<SExpr> v;
+      v.emplace_back(SExpr::Keyword(p.first.toString()));
+      v.emplace_back(SExpr::Keyword(p.second.toString()));
+      sexprs.emplace_back(v);
     }
     d_result = SExpr(sexprs);
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (api::CVC4ApiRecoverableException& e)
+  catch (RecoverableModalException& e)
   {
     d_commandStatus = new CommandRecoverableFailure(e.what());
   }
@@ -1716,18 +1734,6 @@ void GetModelCommand::invoke(api::Solver* solver, SymbolManager* sm)
   try
   {
     d_result = solver->getSmtEngine()->getModel();
-    // set the model declarations, which determines what is printed in the model
-    d_result->clearModelDeclarations();
-    std::vector<api::Sort> declareSorts = sm->getModelDeclareSorts();
-    for (const api::Sort& s : declareSorts)
-    {
-      d_result->addDeclarationSort(s.getTypeNode());
-    }
-    std::vector<api::Term> declareTerms = sm->getModelDeclareTerms();
-    for (const api::Term& t : declareTerms)
-    {
-      d_result->addDeclarationTerm(t.getNode());
-    }
     d_commandStatus = CommandSuccess::instance();
   }
   catch (RecoverableModalException& e)
@@ -1845,7 +1851,7 @@ void BlockModelValuesCommand::invoke(api::Solver* solver, SymbolManager* sm)
     solver->blockModelValues(d_terms);
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (api::CVC4ApiRecoverableException& e)
+  catch (RecoverableModalException& e)
   {
     d_commandStatus = new CommandRecoverableFailure(e.what());
   }
@@ -1886,31 +1892,7 @@ void BlockModelValuesCommand::toStream(std::ostream& out,
 GetProofCommand::GetProofCommand() {}
 void GetProofCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
-  try
-  {
-    d_result = solver->getSmtEngine()->getProof();
-    d_commandStatus = CommandSuccess::instance();
-  }
-  catch (api::CVC4ApiRecoverableException& e)
-  {
-    d_commandStatus = new CommandRecoverableFailure(e.what());
-  }
-  catch (exception& e)
-  {
-    d_commandStatus = new CommandFailure(e.what());
-  }
-}
-
-void GetProofCommand::printResult(std::ostream& out, uint32_t verbosity) const
-{
-  if (ok())
-  {
-    out << d_result;
-  }
-  else
-  {
-    this->Command::printResult(out, verbosity);
-  }
+  Unimplemented() << "Unimplemented get-proof\n";
 }
 
 Command* GetProofCommand::clone() const
@@ -2348,12 +2330,12 @@ void GetUnsatAssumptionsCommand::toStream(std::ostream& out,
 /* class GetUnsatCoreCommand                                                  */
 /* -------------------------------------------------------------------------- */
 
-GetUnsatCoreCommand::GetUnsatCoreCommand() : d_sm(nullptr) {}
+GetUnsatCoreCommand::GetUnsatCoreCommand() {}
 void GetUnsatCoreCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    d_sm = sm;
+    d_solver = solver;
     d_result = solver->getUnsatCore();
 
     d_commandStatus = CommandSuccess::instance();
@@ -2377,20 +2359,8 @@ void GetUnsatCoreCommand::printResult(std::ostream& out,
   }
   else
   {
-    if (options::dumpUnsatCoresFull())
-    {
-      // use the assertions
-      UnsatCore ucr(api::termVectorToNodes(d_result));
-      ucr.toStream(out);
-    }
-    else
-    {
-      // otherwise, use the names
-      std::vector<std::string> names;
-      d_sm->getExpressionNames(d_result, names, true);
-      UnsatCore ucr(names);
-      ucr.toStream(out);
-    }
+    UnsatCore ucr(d_solver->getSmtEngine(), api::termVectorToNodes(d_result));
+    ucr.toStream(out);
   }
 }
 
@@ -2403,7 +2373,7 @@ const std::vector<api::Term>& GetUnsatCoreCommand::getUnsatCore() const
 Command* GetUnsatCoreCommand::clone() const
 {
   GetUnsatCoreCommand* c = new GetUnsatCoreCommand;
-  c->d_sm = d_sm;
+  c->d_solver = d_solver;
   c->d_result = d_result;
   return c;
 }
@@ -2578,21 +2548,21 @@ void SetBenchmarkLogicCommand::toStream(std::ostream& out,
 /* class SetInfoCommand                                                       */
 /* -------------------------------------------------------------------------- */
 
-SetInfoCommand::SetInfoCommand(std::string flag, const std::string& sexpr)
+SetInfoCommand::SetInfoCommand(std::string flag, const SExpr& sexpr)
     : d_flag(flag), d_sexpr(sexpr)
 {
 }
 
 std::string SetInfoCommand::getFlag() const { return d_flag; }
-const std::string& SetInfoCommand::getSExpr() const { return d_sexpr; }
+SExpr SetInfoCommand::getSExpr() const { return d_sexpr; }
 void SetInfoCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    solver->setInfo(d_flag, d_sexpr);
+    solver->getSmtEngine()->setInfo(d_flag, d_sexpr);
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (api::CVC4ApiRecoverableException&)
+  catch (UnrecognizedOptionException&)
   {
     // As per SMT-LIB spec, silently accept unknown set-info keys
     d_commandStatus = CommandSuccess::instance();
@@ -2628,13 +2598,23 @@ void GetInfoCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    std::vector<api::Term> v;
-    v.push_back(solver->mkString(":" + d_flag));
-    v.push_back(solver->mkString(solver->getInfo(d_flag)));
-    d_result = sexprToString(solver->mkTerm(api::SEXPR, v));
+    vector<SExpr> v;
+    v.push_back(SExpr(SExpr::Keyword(string(":") + d_flag)));
+    v.emplace_back(solver->getSmtEngine()->getInfo(d_flag));
+    stringstream ss;
+    if (d_flag == "all-options" || d_flag == "all-statistics")
+    {
+      ss << PrettySExprs(true);
+    }
+    ss << SExpr(v);
+    d_result = ss.str();
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (api::CVC4ApiRecoverableException& e)
+  catch (UnrecognizedOptionException&)
+  {
+    d_commandStatus = new CommandUnsupported();
+  }
+  catch (RecoverableModalException& e)
   {
     d_commandStatus = new CommandRecoverableFailure(e.what());
   }
@@ -2678,21 +2658,21 @@ void GetInfoCommand::toStream(std::ostream& out,
 /* class SetOptionCommand                                                     */
 /* -------------------------------------------------------------------------- */
 
-SetOptionCommand::SetOptionCommand(std::string flag, const std::string& sexpr)
+SetOptionCommand::SetOptionCommand(std::string flag, const SExpr& sexpr)
     : d_flag(flag), d_sexpr(sexpr)
 {
 }
 
 std::string SetOptionCommand::getFlag() const { return d_flag; }
-const std::string& SetOptionCommand::getSExpr() const { return d_sexpr; }
+SExpr SetOptionCommand::getSExpr() const { return d_sexpr; }
 void SetOptionCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   try
   {
-    solver->setOption(d_flag, d_sexpr);
+    solver->getSmtEngine()->setOption(d_flag, d_sexpr);
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (api::CVC4ApiRecoverableException&)
+  catch (UnrecognizedOptionException&)
   {
     d_commandStatus = new CommandUnsupported();
   }
@@ -2730,7 +2710,7 @@ void GetOptionCommand::invoke(api::Solver* solver, SymbolManager* sm)
     d_result = solver->getOption(d_flag);
     d_commandStatus = CommandSuccess::instance();
   }
-  catch (api::CVC4ApiRecoverableException&)
+  catch (UnrecognizedOptionException&)
   {
     d_commandStatus = new CommandUnsupported();
   }
@@ -2768,6 +2748,42 @@ void GetOptionCommand::toStream(std::ostream& out,
                                 OutputLanguage language) const
 {
   Printer::getPrinter(language)->toStreamCmdGetOption(out, d_flag);
+}
+
+/* -------------------------------------------------------------------------- */
+/* class SetExpressionNameCommand                                             */
+/* -------------------------------------------------------------------------- */
+
+SetExpressionNameCommand::SetExpressionNameCommand(api::Term term,
+                                                   std::string name)
+    : d_term(term), d_name(name)
+{
+}
+
+void SetExpressionNameCommand::invoke(api::Solver* solver, SymbolManager* sm)
+{
+  solver->getSmtEngine()->setExpressionName(d_term.getExpr(), d_name);
+  d_commandStatus = CommandSuccess::instance();
+}
+
+Command* SetExpressionNameCommand::clone() const
+{
+  SetExpressionNameCommand* c = new SetExpressionNameCommand(d_term, d_name);
+  return c;
+}
+
+std::string SetExpressionNameCommand::getCommandName() const
+{
+  return "set-expr-name";
+}
+
+void SetExpressionNameCommand::toStream(std::ostream& out,
+                                        int toDepth,
+                                        size_t dag,
+                                        OutputLanguage language) const
+{
+  Printer::getPrinter(language)->toStreamCmdSetExpressionName(
+      out, d_term.getNode(), d_name);
 }
 
 /* -------------------------------------------------------------------------- */

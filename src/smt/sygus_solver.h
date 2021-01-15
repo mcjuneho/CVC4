@@ -2,7 +2,7 @@
 /*! \file sygus_solver.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Haniel Barbosa, Abdalrhman Mohamed
+ **   Andrew Reynolds, Haniel Barbosa, Morgan Deters
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -62,7 +62,7 @@ class SygusSolver
    * which a function is being synthesized. Thus declared functions should use
    * this method as well.
    */
-  void declareSygusVar(Node var);
+  void declareSygusVar(const std::string& id, Node var, TypeNode type);
 
   /**
    * Add a function-to-synthesize declaration.
@@ -79,7 +79,8 @@ class SygusSolver
    * invariant. This information is necessary if we are dumping a command
    * corresponding to this declaration, so that it can be properly printed.
    */
-  void declareSynthFun(Node func,
+  void declareSynthFun(const std::string& id,
+                       Node func,
                        TypeNode type,
                        bool isInv,
                        const std::vector<Node>& vars);

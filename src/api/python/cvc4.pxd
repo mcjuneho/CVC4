@@ -239,6 +239,7 @@ cdef extern from "api/cvc4cpp.h" namespace "CVC4::api":
         Term getSeparationHeap() except +
         Term getSeparationNilTerm() except +
         void pop(uint32_t nscopes) except +
+        void printModel(ostream& out)
         void push(uint32_t nscopes) except +
         void reset() except +
         void resetAssertions() except +

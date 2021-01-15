@@ -19,6 +19,8 @@
 #ifndef CVC4__INDEX_H
 #define CVC4__INDEX_H
 
+#include <cstdint>
+
 namespace CVC4 {
 
 /** Index is a standardized unsigned integer used for efficient indexing. */

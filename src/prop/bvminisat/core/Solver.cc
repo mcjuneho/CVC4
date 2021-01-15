@@ -886,8 +886,6 @@ bool Solver::simplify()
     if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
         return true;
 
-    d_notify->spendResource(ResourceManager::Resource::BvSatSimplifyStep);
-
     // Remove satisfied clauses:
     removeSatisfied(learnts);
     if (remove_satisfied)        // Can be turned off.
@@ -924,7 +922,6 @@ lbool Solver::search(int nof_conflicts, UIP uip)
     starts++;
 
     for (;;){
-        d_notify->safePoint(ResourceManager::Resource::BvSatPropagateStep);
         CRef confl = propagate();
         if (confl != CRef_Undef){
             // CONFLICT

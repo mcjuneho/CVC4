@@ -1,4 +1,4 @@
-(set-logic QF_NRAT)
+(set-logic QF_NRA)
 (declare-fun time__AT0@0 () Real)
 (declare-fun instance.y__AT0@0 () Real)
 (declare-fun instance.x__AT0@0 () Real)

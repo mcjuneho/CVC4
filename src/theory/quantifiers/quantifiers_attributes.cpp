@@ -176,8 +176,7 @@ void QuantAttributes::computeAttributes( Node q ) {
   {
     Node f = qa.d_fundef_f;
     if( d_fun_defs.find( f )!=d_fun_defs.end() ){
-      CVC4Message() << "Cannot define function " << f << " more than once."
-                    << std::endl;
+      Message() << "Cannot define function " << f << " more than once." << std::endl;
       AlwaysAssert(false);
     }
     d_fun_defs[f] = true;
@@ -314,14 +313,6 @@ Node QuantAttributes::getQuantName(Node q) const
     return it->second.d_name;
   }
   return Node::null();
-}
-
-std::string QuantAttributes::quantToString(Node q) const
-{
-  std::stringstream ss;
-  Node name = getQuantName(q);
-  ss << (name.isNull() ? q : name);
-  return ss.str();
 }
 
 int QuantAttributes::getQuantIdNum( Node q ) {

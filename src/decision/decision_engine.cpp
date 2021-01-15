@@ -113,9 +113,8 @@ SatValue DecisionEngine::getPolarity(SatVariable var)
   }
 }
 
-void DecisionEngine::addAssertions(const std::vector<Node>& assertions,
-                                   const std::vector<Node>& ppLemmas,
-                                   const std::vector<Node>& ppSkolems)
+void DecisionEngine::addAssertions(
+    const preprocessing::AssertionPipeline& assertions)
 {
   // new assertions, reset whatever result we knew
   d_result = SAT_VALUE_UNKNOWN;
@@ -127,7 +126,7 @@ void DecisionEngine::addAssertions(const std::vector<Node>& assertions,
 
   for(unsigned i = 0; i < d_needIteSkolemMap.size(); ++i)
   {
-    d_needIteSkolemMap[i]->addAssertions(assertions, ppLemmas, ppSkolems);
+    d_needIteSkolemMap[i]->addAssertions(assertions);
   }
 }
 

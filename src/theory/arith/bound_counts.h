@@ -18,6 +18,8 @@
 #include "cvc4_private.h"
 #pragma once
 
+#include <stdint.h>
+
 #include "base/check.h"
 #include "theory/arith/arithvar.h"
 #include "util/dense_map.h"

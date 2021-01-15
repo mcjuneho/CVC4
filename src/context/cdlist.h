@@ -357,8 +357,6 @@ public:
       return *d_it;
     }
 
-    inline const T* operator->() const { return d_it; }
-
     /** Prefix increment */
     const_iterator& operator++() {
       ++d_it;

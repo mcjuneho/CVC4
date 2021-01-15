@@ -27,10 +27,10 @@
  ** uses TS_WARN to alert users that these tests are disabled.
  **/
 
-#include "test.h"
+#include <cxxtest/TestSuite.h>
 
-#ifndef __CVC4__TEST__UNIT__MEMORY_H
-#define __CVC4__TEST__UNIT__MEMORY_H
+#ifndef __CVC4__TEST__MEMORY_H
+#define __CVC4__TEST__MEMORY_H
 
 #include <string>
 #include <sys/resource.h>
@@ -56,7 +56,16 @@
 namespace CVC4 {
 namespace test {
 
-#ifndef CVC4_MEMORY_LIMITING_DISABLED
+#ifdef CVC4_MEMORY_LIMITING_DISABLED
+
+inline void WarnWithLimitedMemoryDisabledReason() {
+  const std::string reason = std::string("WithLimitedMemory is disabled: ") +
+      std::string(CVC4_MEMORY_LIMITING_DISABLED_REASON);
+  TS_WARN(reason.c_str());
+}
+
+#else /* CVC4_MEMORY_LIMITING_DISABLED */
+
 class WithLimitedMemory {
  public:
   WithLimitedMemory() { remember(); }
@@ -72,19 +81,20 @@ class WithLimitedMemory {
     struct rlimit rlim;
     rlim.rlim_cur = amount;
     rlim.rlim_max = RLIM_INFINITY;
-    ASSERT_EQ(setrlimit(RLIMIT_AS, &rlim), 0);
+    TS_ASSERT_EQUALS(setrlimit(RLIMIT_AS, &rlim), 0);
   }
 
  private:
   void remember() {
     struct rlimit rlim;
-    ASSERT_EQ(getrlimit(RLIMIT_AS, &rlim), 0);
+    TS_ASSERT_EQUALS(getrlimit(RLIMIT_AS, &rlim), 0);
     d_prevAmount = rlim.rlim_cur;
   }
 
   rlim_t d_prevAmount;
 }; /* class WithLimitedMemory */
-#endif
+
+#endif /* CVC4_MEMORY_LIMITING_DISABLED */
 
 } /* CVC4::test namespace */
 } /* CVC4 namespace */

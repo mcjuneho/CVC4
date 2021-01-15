@@ -24,6 +24,7 @@
 
 #include "expr/node.h"
 #include "expr/sygus_datatype.h"
+#include "expr/type.h"
 #include "expr/type_node.h"
 #include "theory/quantifiers/term_util.h"
 

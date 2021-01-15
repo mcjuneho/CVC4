@@ -2,7 +2,7 @@
 /*! \file theory_fp_type_rules.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Martin Brain, Tim King, Aina Niemetz
+ **   Martin Brain, Tim King, Andres Noetzli
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -19,7 +19,6 @@
 
 // This is only needed for checking that components are only applied to leaves.
 #include "theory/theory.h"
-#include "util/roundingmode.h"
 
 #ifndef CVC4__THEORY__FP__THEORY_FP_TYPE_RULES_H
 #define CVC4__THEORY__FP__THEORY_FP_TYPE_RULES_H
@@ -40,20 +39,17 @@ class FloatingPointConstantTypeRule {
 
     const FloatingPoint& f = n.getConst<FloatingPoint>();
 
-    if (check)
-    {
-      if (!(validExponentSize(f.d_fp_size.exponentWidth())))
-      {
+    if (check) {
+      if (!(validExponentSize(f.t.exponent()))) {
         throw TypeCheckingExceptionPrivate(
             n, "constant with invalid exponent size");
       }
-      if (!(validSignificandSize(f.d_fp_size.significandWidth())))
-      {
+      if (!(validSignificandSize(f.t.significand()))) {
         throw TypeCheckingExceptionPrivate(
             n, "constant with invalid significand size");
       }
     }
-    return nodeManager->mkFloatingPointType(f.d_fp_size);
+    return nodeManager->mkFloatingPointType(f.t);
   }
 };
 
@@ -256,17 +252,13 @@ class FloatingPointToFPIEEEBitVectorTypeRule {
     if (check) {
       TypeNode operandType = n[0].getType(check);
 
-      if (!(operandType.isBitVector()))
-      {
+      if (!(operandType.isBitVector())) {
         throw TypeCheckingExceptionPrivate(n,
                                            "conversion to floating-point from "
                                            "bit vector used with sort other "
                                            "than bit vector");
-      }
-      else if (!(operandType.getBitVectorSize()
-                 == info.d_fp_size.exponentWidth()
-                        + info.d_fp_size.significandWidth()))
-      {
+      } else if (!(operandType.getBitVectorSize() ==
+                   info.t.exponent() + info.t.significand())) {
         throw TypeCheckingExceptionPrivate(
             n,
             "conversion to floating-point from bit vector used with bit vector "
@@ -274,7 +266,7 @@ class FloatingPointToFPIEEEBitVectorTypeRule {
       }
     }
 
-    return nodeManager->mkFloatingPointType(info.d_fp_size);
+    return nodeManager->mkFloatingPointType(info.t);
   }
 };
 
@@ -306,7 +298,7 @@ class FloatingPointToFPFloatingPointTypeRule {
       }
     }
 
-    return nodeManager->mkFloatingPointType(info.d_fp_size);
+    return nodeManager->mkFloatingPointType(info.t);
   }
 };
 
@@ -338,7 +330,7 @@ class FloatingPointToFPRealTypeRule {
       }
     }
 
-    return nodeManager->mkFloatingPointType(info.d_fp_size);
+    return nodeManager->mkFloatingPointType(info.t);
   }
 };
 
@@ -370,7 +362,7 @@ class FloatingPointToFPSignedBitVectorTypeRule {
       }
     }
 
-    return nodeManager->mkFloatingPointType(info.d_fp_size);
+    return nodeManager->mkFloatingPointType(info.t);
   }
 };
 
@@ -402,7 +394,7 @@ class FloatingPointToFPUnsignedBitVectorTypeRule {
       }
     }
 
-    return nodeManager->mkFloatingPointType(info.d_fp_size);
+    return nodeManager->mkFloatingPointType(info.t);
   }
 };
 
@@ -427,7 +419,7 @@ class FloatingPointToFPGenericTypeRule {
       }
     }
 
-    return nodeManager->mkFloatingPointType(info.d_fp_size);
+    return nodeManager->mkFloatingPointType(info.t);
   }
 };
 
@@ -458,7 +450,7 @@ class FloatingPointToUBVTypeRule {
       }
     }
 
-    return nodeManager->mkBitVectorType(info.d_bv_size);
+    return nodeManager->mkBitVectorType(info.bvs);
   }
 };
 
@@ -489,7 +481,7 @@ class FloatingPointToSBVTypeRule {
       }
     }
 
-    return nodeManager->mkBitVectorType(info.d_bv_size);
+    return nodeManager->mkBitVectorType(info.bvs);
   }
 };
 
@@ -530,7 +522,7 @@ class FloatingPointToUBVTotalTypeRule {
       }
     }
 
-    return nodeManager->mkBitVectorType(info.d_bv_size);
+    return nodeManager->mkBitVectorType(info.bvs);
   }
 };
 
@@ -571,7 +563,7 @@ class FloatingPointToSBVTotalTypeRule {
       }
     }
 
-    return nodeManager->mkBitVectorType(info.d_bv_size);
+    return nodeManager->mkBitVectorType(info.bvs);
   }
 };
 
@@ -694,10 +686,12 @@ class FloatingPointComponentExponent
      * Here we use types from floatingpoint.h which are the literal
      * back-end but it should't make a difference. */
     FloatingPointSize fps = operandType.getConst<FloatingPointSize>();
-    unsigned bw = FloatingPoint::getUnpackedExponentWidth(fps);
+    symfpuLiteral::fpt format(fps);  // The symfpu interface to type info
+    unsigned bw = FloatingPointLiteral::exponentWidth(format);
 #else
     unsigned bw = 2;
 #endif
+
     return nodeManager->mkBitVectorType(bw);
   }
 };
@@ -735,10 +729,12 @@ class FloatingPointComponentSignificand
 #ifdef CVC4_USE_SYMFPU
     /* As before we need to use some of sympfu. */
     FloatingPointSize fps = operandType.getConst<FloatingPointSize>();
-    unsigned bw = FloatingPoint::getUnpackedSignificandWidth(fps);
+    symfpuLiteral::fpt format(fps);
+    unsigned bw = FloatingPointLiteral::significandWidth(format);
 #else
     unsigned bw = 1;
 #endif
+
     return nodeManager->mkBitVectorType(bw);
   }
 };
@@ -768,7 +764,12 @@ class RoundingModeBitBlast
       }
     }
 
-    return nodeManager->mkBitVectorType(CVC4_NUM_ROUNDING_MODES);
+#ifdef CVC4_USE_SYMFPU
+    /* Uses sympfu for the macro. */
+    return nodeManager->mkBitVectorType(SYMFPU_NUMBER_OF_ROUNDING_MODES);
+#else
+    return nodeManager->mkBitVectorType(5);
+#endif
   }
 };
 
@@ -790,8 +791,8 @@ public:
      *  =       5 + ((2^e)-1)*2^s
      */
 
-    Integer significandValues = Integer(2).pow(fps.significandWidth());
-    Integer exponentValues = Integer(2).pow(fps.exponentWidth());
+    Integer significandValues = Integer(2).pow(fps.significand());
+    Integer exponentValues = Integer(2).pow(fps.exponent());
     exponentValues -= Integer(1);
 
     return Integer(5) + exponentValues * significandValues;

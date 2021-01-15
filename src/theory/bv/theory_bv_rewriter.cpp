@@ -440,13 +440,21 @@ RewriteResponse TheoryBVRewriter::RewriteNeg(TNode node, bool prerewrite) {
 RewriteResponse TheoryBVRewriter::RewriteUdiv(TNode node, bool prerewrite){
   Node resultNode = node;
 
-  return RewriteUdivTotal(node, prerewrite);
+  if(node[1].isConst() && node[1].getConst<BitVector>().getValue() != 0) {
+    return RewriteUdivTotal(node, prerewrite);
+  }
+
+  return RewriteResponse(REWRITE_DONE, resultNode); 
 }
 
 RewriteResponse TheoryBVRewriter::RewriteUrem(TNode node, bool prerewrite){
   Node resultNode = node;
 
-  return RewriteUremTotal(node, prerewrite);
+  if(node[1].isConst() && node[1].getConst<BitVector>().getValue() != 0) {
+    return RewriteUremTotal(node, prerewrite);
+  }
+
+  return RewriteResponse(REWRITE_DONE, resultNode); 
 }
 
 RewriteResponse TheoryBVRewriter::RewriteUdivTotal(TNode node, bool prerewrite){

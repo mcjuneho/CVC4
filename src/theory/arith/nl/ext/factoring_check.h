@@ -2,7 +2,7 @@
 /*! \file factoring_check.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer
+ **   Gereon Kremer
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -18,7 +18,8 @@
 #include <vector>
 
 #include "expr/node.h"
-#include "theory/arith/nl/ext/ext_state.h"
+#include "theory/arith/inference_manager.h"
+#include "theory/arith/nl/nl_model.h"
 
 namespace CVC4 {
 namespace theory {
@@ -28,12 +29,12 @@ namespace nl {
 class FactoringCheck
 {
  public:
-  FactoringCheck(ExtState* data);
+  FactoringCheck(InferenceManager& im, NlModel& model);
 
   /** check factoring
    *
    * Returns a set of valid theory lemmas, based on a
-   * lemma schema that states a relationship between monomials
+   * lemma schema that states a relationship betwen monomials
    * with common factors that occur in the same constraint.
    *
    * Examples:
@@ -46,20 +47,17 @@ class FactoringCheck
              const std::vector<Node>& false_asserts);
 
  private:
-  /** Basic data that is shared with other checks */
-  ExtState* d_data;
-
+  /** The inference manager that we push conflicts and lemmas to. */
+  InferenceManager& d_im;
+  /** Reference to the non-linear model object */
+  NlModel& d_model;
   /** maps nodes to their factor skolems */
   std::map<Node, Node> d_factor_skolem;
 
   Node d_zero;
   Node d_one;
 
-  /**
-   * Introduces a new purification skolem k for n and adds k=n as lemma.
-   * If proof is not nullptr, it proves this lemma via MACRO_SR_PRED_INTRO.
-   */
-  Node getFactorSkolem(Node n, CDProof* proof);
+  Node getFactorSkolem(Node n);
 };
 
 }  // namespace nl

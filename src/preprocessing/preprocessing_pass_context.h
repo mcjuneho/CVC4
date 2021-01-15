@@ -40,6 +40,7 @@ class PreprocessingPassContext
  public:
   PreprocessingPassContext(
       SmtEngine* smt,
+      RemoveTermFormulas* iteRemover,
       theory::booleans::CircuitPropagator* circuitPropagator,
       ProofNodeManager* pnm);
 
@@ -48,6 +49,7 @@ class PreprocessingPassContext
   prop::PropEngine* getPropEngine() { return d_smt->getPropEngine(); }
   context::Context* getUserContext() { return d_smt->getUserContext(); }
   context::Context* getDecisionContext() { return d_smt->getContext(); }
+  RemoveTermFormulas* getIteRemover() { return d_iteRemover; }
 
   theory::booleans::CircuitPropagator* getCircuitPropagator()
   {
@@ -64,8 +66,7 @@ class PreprocessingPassContext
     d_resourceManager->spendResource(r);
   }
 
-  /** Get the current logic info of the SmtEngine */
-  const LogicInfo& getLogicInfo() { return d_smt->getLogicInfo(); }
+  const LogicInfo& getLogicInfo() { return d_smt->d_logic; }
 
   /* Widen the logic to include the given theory. */
   void widenLogic(theory::TheoryId id);
@@ -92,6 +93,9 @@ class PreprocessingPassContext
 
   /** Pointer to the ResourceManager for this context. */
   ResourceManager* d_resourceManager;
+
+  /** Instance of the ITE remover */
+  RemoveTermFormulas* d_iteRemover;
 
   /* The top level substitutions */
   theory::TrustSubstitutionMap d_topLevelSubstitutions;

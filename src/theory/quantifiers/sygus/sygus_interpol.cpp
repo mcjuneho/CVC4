@@ -2,7 +2,7 @@
 /*! \file sygus_interpol.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Ying Sheng, Abdalrhman Mohamed, Andrew Reynolds
+ **   Ying Sheng, Andrew Reynolds
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -233,6 +233,14 @@ void SygusInterpol::mkSygusConjecture(Node itp,
   // set the sygus bound variable list
   Trace("sygus-interpol-debug") << "Set attributes..." << std::endl;
   itp.setAttribute(SygusSynthFunVarListAttribute(), d_ibvlShared);
+  // sygus attribute
+  Node sygusVar = nm->mkSkolem("sygus", nm->booleanType());
+  SygusAttribute ca;
+  sygusVar.setAttribute(ca, true);
+  Node instAttr = nm->mkNode(kind::INST_ATTRIBUTE, sygusVar);
+  std::vector<Node> iplc;
+  iplc.push_back(instAttr);
+  Node instAttrList = nm->mkNode(kind::INST_PATTERN_LIST, iplc);
   Trace("sygus-interpol-debug") << "...finish" << std::endl;
 
   // Fa( x )
@@ -331,12 +339,12 @@ bool SygusInterpol::solveInterpolation(const std::string& name,
   l.enableSygus();
   subSolver->setLogic(l);
 
-  for (const Node& var : d_vars)
+  for (Node var : d_vars)
   {
-    subSolver->declareSygusVar(var);
+    subSolver->declareSygusVar(name, var, var.getType());
   }
   std::vector<Node> vars_empty;
-  subSolver->declareSynthFun(itp, grammarType, false, vars_empty);
+  subSolver->declareSynthFun(name, itp, grammarType, false, vars_empty);
   Trace("sygus-interpol") << "SmtEngine::getInterpol: made conjecture : "
                           << d_sygusConj << ", solving for "
                           << d_sygusConj[0][0] << std::endl;

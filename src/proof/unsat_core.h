@@ -2,14 +2,17 @@
 /*! \file unsat_core.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Mathias Preiner
+ **   Morgan Deters, Andrew Reynolds, Mathias Preiner
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief Representation of unsat cores.
+ ** \brief [[ Add one-line brief description here ]]
+ **
+ ** [[ Add lengthier description here ]]
+ ** \todo document this file
  **/
 
 #include "cvc4_private.h"
@@ -24,45 +27,44 @@
 
 namespace CVC4 {
 
-/**
- * An unsat core, which can optionally be initialized as a list of names
- * or as a list of formulas.
- */
+class SmtEngine;
+
 class UnsatCore
 {
- public:
-  UnsatCore() {}
-  /** Initialize using assertions */
-  UnsatCore(const std::vector<Node>& core);
-  /** Initialize using assertion names */
-  UnsatCore(std::vector<std::string>& names);
+  /** The SmtEngine we're associated with */
+  SmtEngine* d_smt;
+
+  std::vector<Node> d_core;
+
+  void initMessage() const;
+
+public:
+  UnsatCore() : d_smt(NULL) {}
+
+  UnsatCore(SmtEngine* smt, const std::vector<Node>& core)
+      : d_smt(smt), d_core(core)
+  {
+    initMessage();
+  }
+
   ~UnsatCore() {}
 
-  /** Whether we are using names for this unsat core */
-  bool useNames() const { return d_useNames; }
-  /** Get the assertions in the unsat core */
-  const std::vector<Node>& getCore() const;
-  /** Get their names */
-  const std::vector<std::string>& getCoreNames() const;
+  /** get the smt engine that this unsat core is hooked up to */
+  SmtEngine* getSmtEngine() const { return d_smt; }
+
+  size_t size() const { return d_core.size(); }
 
   typedef std::vector<Node>::const_iterator iterator;
   typedef std::vector<Node>::const_iterator const_iterator;
 
   const_iterator begin() const;
   const_iterator end() const;
-
-  /**
-   * prints this UnsatCore object to the stream out.
-   */
+  
+  /** prints this UnsatCore object to the stream out.
+  * We use the expression names stored in the SmtEngine d_smt
+  */
   void toStream(std::ostream& out) const;
 
- private:
-  /** Whether we are using names for this unsat core */
-  bool d_useNames;
-  /** The unsat core */
-  std::vector<Node> d_core;
-  /** The names of assertions in the above core */
-  std::vector<std::string> d_names;
 };/* class UnsatCore */
 
 /** Print the unsat core to stream out */

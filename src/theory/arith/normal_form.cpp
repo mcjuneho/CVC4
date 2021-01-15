@@ -2,7 +2,7 @@
 /*! \file normal_form.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tim King, Gereon Kremer, Andrew Reynolds
+ **   Tim King, Andrew Reynolds, Morgan Deters
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.

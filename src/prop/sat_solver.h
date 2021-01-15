@@ -19,15 +19,16 @@
 #ifndef CVC4__PROP__SAT_SOLVER_H
 #define CVC4__PROP__SAT_SOLVER_H
 
+#include <stdint.h>
+
 #include <string>
 
 #include "context/cdlist.h"
 #include "context/context.h"
 #include "expr/node.h"
-#include "expr/proof_node_manager.h"
 #include "proof/clause_id.h"
-#include "prop/bv_sat_solver_notify.h"
 #include "prop/sat_solver_types.h"
+#include "prop/bv_sat_solver_notify.h"
 #include "util/statistics_registry.h"
 
 namespace CVC4 {
@@ -123,15 +124,13 @@ public:
 
 };/* class BVSatSolverInterface */
 
-class CDCLTSatSolverInterface : public SatSolver
+class DPLLSatSolverInterface : public SatSolver
 {
  public:
-  virtual ~CDCLTSatSolverInterface(){};
+  virtual ~DPLLSatSolverInterface(){};
 
   virtual void initialize(context::Context* context,
-                          prop::TheoryProxy* theoryProxy,
-                          CVC4::context::UserContext* userContext,
-                          ProofNodeManager* pnm) = 0;
+                          prop::TheoryProxy* theoryProxy) = 0;
 
   virtual void push() = 0;
 
@@ -148,10 +147,7 @@ class CDCLTSatSolverInterface : public SatSolver
   virtual void requirePhase(SatLiteral lit) = 0;
 
   virtual bool isDecision(SatVariable decn) const = 0;
-
-  virtual std::shared_ptr<ProofNode> getProof() = 0;
-
-}; /* class CDCLTSatSolverInterface */
+}; /* class DPLLSatSolverInterface */
 
 inline std::ostream& operator <<(std::ostream& out, prop::SatLiteral lit) {
   out << lit.toString();

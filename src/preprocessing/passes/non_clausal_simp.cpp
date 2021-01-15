@@ -2,7 +2,7 @@
 /*! \file non_clausal_simp.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Aina Niemetz, Andrew Reynolds, Haniel Barbosa
+ **   Aina Niemetz, Haniel Barbosa, Andrew Reynolds
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -66,8 +66,7 @@ NonClausalSimp::NonClausalSimp(PreprocessingPassContext* preprocContext)
 PreprocessingPassResult NonClausalSimp::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
-  Assert(!options::unsatCores() || isProofEnabled())
-      << "Unsat cores with non-clausal simp only supported with new proofs";
+  Assert(!options::unsatCores());
 
   d_preprocContext->spendResource(ResourceManager::Resource::PreprocessStep);
 
@@ -112,8 +111,13 @@ PreprocessingPassResult NonClausalSimp::applyInternal(
     // If in conflict, just return false
     Trace("non-clausal-simplify")
         << "conflict in non-clausal propagation" << std::endl;
+    Assert(!options::unsatCores());
     assertionsToPreprocess->clear();
     assertionsToPreprocess->pushBackTrusted(conf);
+    if (options::unsatCores())
+    {
+      ProofManager::currentPM()->addDependence(conf.getNode(), Node::null());
+    }
     propagator->setNeedsFinish(true);
     return PreprocessingPassResult::CONFLICT;
   }
@@ -173,9 +177,14 @@ PreprocessingPassResult NonClausalSimp::applyInternal(
         // If the learned literal simplifies to false, we're in conflict
         Trace("non-clausal-simplify")
             << "conflict with " << learned_literals[i].getNode() << std::endl;
+        Assert(!options::unsatCores());
         assertionsToPreprocess->clear();
         Node n = NodeManager::currentNM()->mkConst<bool>(false);
         assertionsToPreprocess->push_back(n, false, false, d_llpg.get());
+        if (options::unsatCores())
+        {
+          ProofManager::currentPM()->addDependence(n, Node::null());
+        }
         propagator->setNeedsFinish(true);
         return PreprocessingPassResult::CONFLICT;
       }
@@ -207,9 +216,14 @@ PreprocessingPassResult NonClausalSimp::applyInternal(
         // If in conflict, we return false
         Trace("non-clausal-simplify")
             << "conflict while solving " << learnedLiteral << std::endl;
+        Assert(!options::unsatCores());
         assertionsToPreprocess->clear();
         Node n = NodeManager::currentNM()->mkConst<bool>(false);
         assertionsToPreprocess->push_back(n);
+        if (options::unsatCores())
+        {
+          ProofManager::currentPM()->addDependence(n, Node::null());
+        }
         propagator->setNeedsFinish(true);
         return PreprocessingPassResult::CONFLICT;
       }

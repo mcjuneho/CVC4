@@ -46,13 +46,8 @@ class ArithPreprocess
    * Call eliminate operators on formula n, return the resulting trust node,
    * which is of TrustNodeKind REWRITE and whose node is the result of
    * eliminating extended operators from n.
-   *
-   * @param n The node to eliminate operators from
-   * @param partialOnly Whether we are eliminating partial operators only.
-   * @return the trust node proving (= n nr) where nr is the return of
-   * eliminating operators in n, or the null trust node if n was unchanged.
    */
-  TrustNode eliminate(TNode n, bool partialOnly = false);
+  TrustNode eliminate(TNode n);
   /**
    * Reduce assertion. This sends a lemma via the inference manager if atom
    * contains any extended operators. When applicable, the lemma is of the form:

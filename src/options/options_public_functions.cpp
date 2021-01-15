@@ -66,6 +66,10 @@ bool Options::getDumpProofs() const{
   return (*this)[options::dumpProofs];
 }
 
+bool Options::getDumpSynth() const{
+  return (*this)[options::dumpSynth];
+}
+
 bool Options::getDumpUnsatCores() const{
   // dump unsat cores full enables dumpUnsatCores
   return (*this)[options::dumpUnsatCores]
@@ -207,6 +211,10 @@ void Options::setOut(std::ostream* value) {
 
 void Options::setOutputLanguage(OutputLanguage value) {
   set(options::outputLanguage, value);
+}
+
+bool Options::wasSetByUserDumpSynth() const {
+  return wasSetByUser(options::dumpSynth);
 }
 
 bool Options::wasSetByUserEarlyExit() const {

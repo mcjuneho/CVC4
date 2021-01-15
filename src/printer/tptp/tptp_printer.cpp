@@ -2,7 +2,7 @@
 /*! \file tptp_printer.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Tim King
+ **   Andrew Reynolds, Tim King, Morgan Deters
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -20,6 +20,7 @@
 #include <typeinfo>
 #include <vector>
 
+#include "expr/expr.h"            // for ExprSetDepth etc..
 #include "expr/node_manager.h"    // for VarNameAttr
 #include "options/language.h"     // for LANG_AST
 #include "options/smt_options.h"  // for unsat cores
@@ -53,44 +54,32 @@ void TptpPrinter::toStream(std::ostream& out, const smt::Model& m) const
                                         : "CandidateFiniteModel");
   out << "% SZS output start " << statusName << " for " << m.getInputName()
       << endl;
-  this->Printer::toStreamUsing(language::output::LANG_SMTLIB_V2_5, out, m);
+  for(size_t i = 0; i < m.getNumCommands(); ++i) {
+    this->Printer::toStreamUsing(language::output::LANG_SMTLIB_V2_5, out, m, m.getCommand(i));
+  }
   out << "% SZS output end " << statusName << " for " << m.getInputName()
       << endl;
 }
 
-void TptpPrinter::toStreamModelSort(std::ostream& out,
-                                    const smt::Model& m,
-                                    TypeNode tn) const
+void TptpPrinter::toStream(std::ostream& out,
+                           const smt::Model& m,
+                           const NodeCommand* c) const
 {
   // shouldn't be called; only the non-Command* version above should be
   Unreachable();
 }
-
-void TptpPrinter::toStreamModelTerm(std::ostream& out,
-                                    const smt::Model& m,
-                                    Node n) const
-{
-  // shouldn't be called; only the non-Command* version above should be
-  Unreachable();
-}
-
 void TptpPrinter::toStream(std::ostream& out, const UnsatCore& core) const
 {
   out << "% SZS output start UnsatCore " << std::endl;
-  if (core.useNames())
-  {
-    // use the names
-    const std::vector<std::string>& cnames = core.getCoreNames();
-    for (const std::string& cn : cnames)
-    {
-      out << cn << std::endl;
-    }
-  }
-  else
-  {
-    // otherwise, use the formulas
-    for (UnsatCore::const_iterator i = core.begin(); i != core.end(); ++i)
-    {
+  SmtEngine * smt = core.getSmtEngine();
+  Assert(smt != NULL);
+  for(UnsatCore::const_iterator i = core.begin(); i != core.end(); ++i) {
+    std::string name;
+    if (smt->getExpressionName(*i, name)) {
+      // Named assertions always get printed
+      out << name << endl;
+    } else if (options::dumpUnsatCoresFull()) {
+      // Unnamed assertions only get printed if the option is set
       out << *i << endl;
     }
   }

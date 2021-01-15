@@ -143,7 +143,7 @@ bool InferenceManager::sendInference(const std::vector<Node>& exp,
   ii.d_id = infer;
   ii.d_idRev = isRev;
   ii.d_conc = eq;
-  ii.d_premises = exp;
+  ii.d_ant = exp;
   ii.d_noExplain = noExplain;
   sendInference(ii, asLemma);
   return true;
@@ -170,9 +170,10 @@ void InferenceManager::sendInference(InferInfo& ii, bool asLemma)
   if (ii.isConflict())
   {
     Trace("strings-infer-debug") << "...as conflict" << std::endl;
-    Trace("strings-lemma") << "Strings::Conflict: " << ii.d_premises << " by "
+    Trace("strings-lemma") << "Strings::Conflict: " << ii.d_ant << " by "
                            << ii.d_id << std::endl;
-    Trace("strings-conflict") << "CONFLICT: inference conflict " << ii.d_premises << " by " << ii.d_id << std::endl;
+    Trace("strings-conflict") << "CONFLICT: inference conflict " << ii.d_ant
+                              << " by " << ii.d_id << std::endl;
     ++(d_statistics.d_conflictsInfer);
     // process the conflict immediately
     processConflict(ii);
@@ -189,7 +190,7 @@ void InferenceManager::sendInference(InferInfo& ii, bool asLemma)
     std::vector<Node> vars;
     std::vector<Node> subs;
     std::vector<Node> unproc;
-    for (const Node& ac : ii.d_premises)
+    for (const Node& ac : ii.d_ant)
     {
       d_termReg.inferSubstitutionProxyVars(ac, vars, subs, unproc);
     }
@@ -305,7 +306,7 @@ void InferenceManager::processConflict(const InferInfo& ii)
     d_ipc->notifyFact(ii);
   }
   // make the trust node
-  TrustNode tconf = mkConflictExp(ii.d_premises, d_ipc.get());
+  TrustNode tconf = mkConflictExp(ii.d_ant, d_ipc.get());
   Assert(tconf.getKind() == TrustNodeKind::CONFLICT);
   Trace("strings-assert") << "(assert (not " << tconf.getNode()
                           << ")) ; conflict " << ii.d_id << std::endl;
@@ -328,13 +329,13 @@ bool InferenceManager::processFact(InferInfo& ii)
   {
     facts.push_back(ii.d_conc);
   }
-  Trace("strings-assert") << "(assert (=> " << ii.getPremises() << " "
+  Trace("strings-assert") << "(assert (=> " << ii.getAntecedant() << " "
                           << ii.d_conc << ")) ; fact " << ii.d_id << std::endl;
   Trace("strings-lemma") << "Strings::Fact: " << ii.d_conc << " from "
-                         << ii.getPremises() << " by " << ii.d_id
+                         << ii.getAntecedant() << " by " << ii.d_id
                          << std::endl;
   std::vector<Node> exp;
-  for (const Node& ec : ii.d_premises)
+  for (const Node& ec : ii.d_ant)
   {
     utils::flattenOp(AND, ec, exp);
   }
@@ -377,7 +378,7 @@ bool InferenceManager::processLemma(InferInfo& ii)
   Assert(!ii.isConflict());
   // set up the explanation and no-explanation
   std::vector<Node> exp;
-  for (const Node& ec : ii.d_premises)
+  for (const Node& ec : ii.d_ant)
   {
     utils::flattenOp(AND, ec, exp);
   }
@@ -412,7 +413,7 @@ bool InferenceManager::processLemma(InferInfo& ii)
   // (lazily), since this is the moment when we have decided to process the
   // inference.
   for (const std::pair<const LengthStatus, std::vector<Node> >& sks :
-       ii.d_newSkolem)
+       ii.d_new_skolem)
   {
     for (const Node& n : sks.second)
     {

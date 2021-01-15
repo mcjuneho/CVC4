@@ -1,4 +1,3 @@
-; COMMAND-LINE: --produce-models
 ; EXPECT: (error "Extended set operators are not supported in default mode, try --sets-ext.")
 ; EXIT: 1
 (set-logic ALL)

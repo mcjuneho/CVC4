@@ -21,6 +21,7 @@
 
 #include "expr/node.h"
 #include "expr/type_node.h"
+#include "expr/expr.h"
 #include "theory/rewriter.h"
 #include "theory/builtin/theory_builtin_rewriter.h" // for array and lambda representation
 

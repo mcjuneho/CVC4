@@ -19,9 +19,7 @@
 #ifndef CVC4__DECISION__DECISION_STRATEGY_H
 #define CVC4__DECISION__DECISION_STRATEGY_H
 
-#include <vector>
-
-#include "expr/node.h"
+#include "preprocessing/assertion_pipeline.h"
 #include "prop/sat_solver_types.h"
 #include "smt/term_formula_removal.h"
 
@@ -60,13 +58,8 @@ public:
 
   bool needIteSkolemMap() override { return true; }
 
-  /**
-   * Add a list of assertions, as well as lemmas coming from preprocessing
-   * (ppLemmas) and pairwise the skolems they constrain (ppSkolems).
-   */
-  virtual void addAssertions(const std::vector<Node>& assertions,
-                             const std::vector<Node>& ppLemmas,
-                             const std::vector<Node>& ppSkolems) = 0;
+  virtual void addAssertions(
+      const preprocessing::AssertionPipeline& assertions) = 0;
 };/* class ITEDecisionStrategy */
 
 class RelevancyStrategy : public ITEDecisionStrategy {

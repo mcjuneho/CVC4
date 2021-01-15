@@ -26,6 +26,7 @@ ${includes}
 #ifndef CVC4__EXPR_H
 #define CVC4__EXPR_H
 
+#include <stdint.h>
 #include <iosfwd>
 #include <iterator>
 #include <string>

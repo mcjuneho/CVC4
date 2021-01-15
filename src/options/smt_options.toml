@@ -233,6 +233,14 @@ header = "options/smt_options.h"
   help       = "use sygus print callbacks to print sygus terms in the user-provided form (disable for debugging)"
 
 [[option]]
+  name       = "dumpSynth"
+  category   = "regular"
+  long       = "dump-synth"
+  type       = "bool"
+  default    = "false"
+  help       = "output solution for synthesis conjectures after every UNSAT/VALID response"
+
+[[option]]
   name       = "unsatCores"
   category   = "regular"
   long       = "produce-unsat-cores"
@@ -354,14 +362,6 @@ header = "options/smt_options.h"
   help       = "enables compressing ites after ite simplification"
 
 [[option]]
-  name       = "earlyIteRemoval"
-  category   = "experimental"
-  long       = "early-ite-removal"
-  type       = "bool"
-  default    = "false"
-  help       = "remove ITEs early in preprocessing"
-
-[[option]]
   name       = "unconstrainedSimp"
   category   = "regular"
   long       = "unconstrained-simp"
@@ -417,7 +417,7 @@ header = "options/smt_options.h"
   category   = "regular"
   long       = "model-u-print=MODE"
   type       = "ModelUninterpPrintMode"
-  default    = "None"
+  default    = "DeclFun"
   read_only  = true
   help       = "determines how to print uninterpreted elements in models"
   help_mode  = "uninterpreted elements in models printing  modes."
@@ -429,11 +429,7 @@ header = "options/smt_options.h"
   help = "print uninterpreted elements declare-fun, and also include a declare-sort for the sort"
 [[option.mode.DeclFun]]
   name = "decl-fun"
-  help = "print uninterpreted elements declare-fun, but don't include a declare-sort for the sort"
-[[option.mode.None]]
-  name = "none"
-  help = "(default) do not print declarations of uninterpreted elements in models."
-
+  help = "(default) print uninterpreted elements declare-fun, but don't include a declare-sort for the sort"
 
 [[option]]
   name       = "modelWitnessValue"
@@ -499,24 +495,6 @@ header = "options/smt_options.h"
   handler    = "limitHandler"
   read_only  = true
   help       = "enable resource limiting per query"
-
-[[option]]
-  name       = "arithPivotStep"
-  category   = "expert"
-  long       = "arith-pivot-step=N"
-  type       = "unsigned"
-  default    = "1"
-  read_only  = true
-  help       = "amount of resources spent for each arithmetic pivot step"
-
-[[option]]
-  name       = "arithNlLemmaStep"
-  category   = "expert"
-  long       = "arith-nl-lemma-step=N"
-  type       = "unsigned"
-  default    = "1"
-  read_only  = true
-  help       = "amount of resources spent for each arithmetic nonlinear lemma step"
 
 [[option]]
   name       = "rewriteStep"
@@ -591,15 +569,6 @@ header = "options/smt_options.h"
   help       = "amount of resources spent when adding lemmas"
 
 [[option]]
-  name       = "newSkolemStep"
-  category   = "expert"
-  long       = "new-skolem-step=N"
-  type       = "unsigned"
-  default    = "1"
-  read_only  = true
-  help       = "amount of resources spent when adding new skolems"
-
-[[option]]
   name       = "restartStep"
   category   = "expert"
   long       = "restart-step=N"
@@ -654,24 +623,6 @@ header = "options/smt_options.h"
   help       = "amount of resources spent for each sat conflict (bitvectors)"
 
 [[option]]
-  name       = "bvSatPropagateStep"
-  category   = "expert"
-  long       = "bv-sat-propagate-step=N"
-  type       = "unsigned"
-  default    = "1"
-  read_only  = true
-  help       = "amount of resources spent for each sat propagate (bitvectors)"
-
-[[option]]
-  name       = "bvSatSimplifyStep"
-  category   = "expert"
-  long       = "bv-sat-simplify-step=N"
-  type       = "unsigned"
-  default    = "1"
-  read_only  = true
-  help       = "amount of resources spent for each sat simplify (bitvectors)"
-
-[[option]]
   name       = "forceNoLimitCpuWhileDump"
   category   = "regular"
   long       = "force-no-limit-cpu-while-dump"
@@ -679,16 +630,6 @@ header = "options/smt_options.h"
   default    = "false"
   read_only  = true
   help       = "Force no CPU limit when dumping models and proofs"
-
-[[option]]
-  name       = "foreignTheoryRewrite"
-  category   = "regular"
-  long       = "foreign-theory-rewrite"
-  type       = "bool"
-  default    = "false"
-  read_only  = true
-  help       = "Cross-theory rewrites"
-
 
 [[option]]
   name       = "solveBVAsInt"

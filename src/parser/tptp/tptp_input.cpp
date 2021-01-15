@@ -19,6 +19,7 @@
 
 #include <antlr3.h>
 
+#include "expr/expr_manager.h"
 #include "parser/input.h"
 #include "parser/parser.h"
 #include "parser/parser_exception.h"

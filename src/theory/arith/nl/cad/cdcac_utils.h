@@ -28,7 +28,6 @@
 #include <vector>
 
 #include "expr/node.h"
-#include "theory/arith/nl/cad/projections.h"
 
 namespace CVC4 {
 namespace theory {
@@ -52,13 +51,13 @@ struct CACInterval
   /** The actual interval. */
   poly::Interval d_interval;
   /** The polynomials characterizing the lower bound. */
-  PolyVector d_lowerPolys;
+  std::vector<poly::Polynomial> d_lowerPolys;
   /** The polynomials characterizing the upper bound. */
-  PolyVector d_upperPolys;
+  std::vector<poly::Polynomial> d_upperPolys;
   /** The characterizing polynomials in the main variable. */
-  PolyVector d_mainPolys;
+  std::vector<poly::Polynomial> d_mainPolys;
   /** The characterizing polynomials in lower variables. */
-  PolyVector d_downPolys;
+  std::vector<poly::Polynomial> d_downPolys;
   /** The constraints used to derive this interval. */
   std::vector<Node> d_origins;
 };

@@ -2,7 +2,7 @@
 /*! \file apply_substs.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Aina Niemetz, Andrew Reynolds, Mathias Preiner
+ **   Aina Niemetz, Andres Noetzli, Mathias Preiner
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -33,28 +33,32 @@ ApplySubsts::ApplySubsts(PreprocessingPassContext* preprocContext)
 PreprocessingPassResult ApplySubsts::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
-  Chat() << "applying substitutions..." << std::endl;
-  Trace("apply-substs") << "SmtEnginePrivate::processAssertions(): "
-                        << "applying substitutions" << std::endl;
-  // TODO(#1255): Substitutions in incremental mode should be managed with a
-  // proper data structure.
-
-  theory::TrustSubstitutionMap& tlsm =
-      d_preprocContext->getTopLevelSubstitutions();
-  unsigned size = assertionsToPreprocess->size();
-  for (unsigned i = 0; i < size; ++i)
+  if (!options::unsatCores())
   {
-    if (assertionsToPreprocess->isSubstsIndex(i))
+    Chat() << "applying substitutions..." << std::endl;
+    Trace("apply-substs") << "SmtEnginePrivate::processAssertions(): "
+                      << "applying substitutions" << std::endl;
+    // TODO(#1255): Substitutions in incremental mode should be managed with a
+    // proper data structure.
+
+    theory::TrustSubstitutionMap& tlsm =
+        d_preprocContext->getTopLevelSubstitutions();
+    unsigned size = assertionsToPreprocess->size();
+    for (unsigned i = 0; i < size; ++i)
     {
-      continue;
+      if (assertionsToPreprocess->isSubstsIndex(i))
+      {
+        continue;
+      }
+      Trace("apply-substs") << "applying to " << (*assertionsToPreprocess)[i]
+                        << std::endl;
+      d_preprocContext->spendResource(
+          ResourceManager::Resource::PreprocessStep);
+      assertionsToPreprocess->replaceTrusted(
+          i, tlsm.apply((*assertionsToPreprocess)[i]));
+      Trace("apply-substs") << "  got " << (*assertionsToPreprocess)[i]
+                        << std::endl;
     }
-    Trace("apply-substs") << "applying to " << (*assertionsToPreprocess)[i]
-                          << std::endl;
-    d_preprocContext->spendResource(ResourceManager::Resource::PreprocessStep);
-    assertionsToPreprocess->replaceTrusted(
-        i, tlsm.apply((*assertionsToPreprocess)[i]));
-    Trace("apply-substs") << "  got " << (*assertionsToPreprocess)[i]
-                          << std::endl;
   }
   return PreprocessingPassResult::NO_CONFLICT;
 }

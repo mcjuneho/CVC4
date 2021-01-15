@@ -1,5 +1,3 @@
-; COMMAND-LINE: -q
-; EXPECT: sat
 (set-logic QF_NIA)
 (declare-fun a () Int)
 (declare-fun e () Int)
