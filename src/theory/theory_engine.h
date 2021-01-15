@@ -95,12 +95,7 @@ class RelevanceManager;
 namespace eq {
 class EqualityEngine;
 }  // namespace eq
-
-class EntailmentCheckParameters;
-class EntailmentCheckSideEffects;
 }/* CVC4::theory namespace */
-
-class RemoveTermFormulas;
 
 /**
  * This is essentially an abstraction for a collection of theories.  A
@@ -295,9 +290,6 @@ class TheoryEngine {
   /** sort inference module */
   SortInference d_sortInfer;
 
-  /** The theory preprocessor */
-  theory::TheoryPreprocessor d_tpp;
-
   /** Time spent in theory combination */
   TimerStat d_combineTheoriesTime;
 
@@ -313,7 +305,6 @@ class TheoryEngine {
   TheoryEngine(context::Context* context,
                context::UserContext* userContext,
                ResourceManager* rm,
-               RemoveTermFormulas& iteRemover,
                const LogicInfo& logic,
                OutputManager& outMgr,
                ProofNodeManager* pnm);
@@ -449,12 +440,10 @@ class TheoryEngine {
 
  public:
   /**
-   * Runs theory specific preprocessing on the non-Boolean parts of
-   * the formula.  This is only called on input assertions, after ITEs
-   * have been removed.
+   * Preprocess rewrite equality, called by the preprocessor to rewrite
+   * equalities appearing in the input.
    */
-  theory::TrustNode preprocess(TNode node);
-
+  theory::TrustNode ppRewriteEquality(TNode eq);
   /** Notify (preprocessed) assertions. */
   void notifyPreprocessedAssertions(const std::vector<Node>& assertions);
 
@@ -663,7 +652,9 @@ class TheoryEngine {
   Node getModelValue(TNode var);
 
   /**
-   * Takes a literal and returns an equivalent literal that is guaranteed to be a SAT literal
+   * Takes a literal and returns an equivalent literal that is guaranteed to be
+   * a SAT literal. This rewrites and preprocesses n, which notice may involve
+   * sending lemmas if preprocessing n involves introducing new skolems.
    */
   Node ensureLiteral(TNode n);
 
@@ -684,21 +675,12 @@ class TheoryEngine {
 
   /**
    * Get instantiation methods
-   *   first inputs forall x.q[x] and returns ( q[a], ..., q[z] )
-   *   second inputs forall x.q[x] and returns ( a, ..., z )
-   *   third and fourth return mappings e.g. forall x.q1[x] -> ( q1[a]...q1[z] )
+   *   the first given forall x.q[x] returns ( a, ..., z )
+   *   the second returns mappings e.g. forall x.q1[x] -> ( q1[a]...q1[z] )
    * , ... , forall x.qn[x] -> ( qn[a]...qn[z] )
    */
-  void getInstantiations( Node q, std::vector< Node >& insts );
   void getInstantiationTermVectors( Node q, std::vector< std::vector< Node > >& tvecs );
-  void getInstantiations( std::map< Node, std::vector< Node > >& insts );
   void getInstantiationTermVectors( std::map< Node, std::vector< std::vector< Node > > >& insts );
-
-  /**
-   * Get instantiated conjunction, returns q[t1] ^ ... ^ q[tn] where t1...tn are current set of instantiations for q.
-   *   Can be used for quantifier elimination when satisfiable and q[t1] ^ ... ^ q[tn] |= q
-   */
-  Node getInstantiatedConjunction( Node q );
 
   /**
    * Forwards an entailment check according to the given theoryOfMode.
@@ -746,7 +728,6 @@ private:
    * This function is called from the smt engine's checkModel routine.
    */
   void checkTheoryAssertionsWithModel(bool hardFailure);
-
  private:
   IntStat d_arithSubstitutionsAdded;
 };/* class TheoryEngine */

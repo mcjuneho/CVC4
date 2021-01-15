@@ -354,6 +354,7 @@ const static std::unordered_map<CVC4::Kind, Kind, CVC4::kind::KindHashFunction>
         {CVC4::Kind::DISTINCT, DISTINCT},
         {CVC4::Kind::VARIABLE, CONSTANT},
         {CVC4::Kind::BOUND_VARIABLE, VARIABLE},
+        {CVC4::Kind::SEXPR, SEXPR},
         {CVC4::Kind::LAMBDA, LAMBDA},
         {CVC4::Kind::WITNESS, WITNESS},
         /* Boolean --------------------------------------------------------- */
@@ -822,6 +823,14 @@ class CVC4ApiRecoverableExceptionStream
                 << "Invalid argument '" << arg << "' for '" << #arg \
                 << "', expected "
 
+#define CVC4_API_RECOVERABLE_ARG_CHECK_EXPECTED(cond, arg)          \
+  CVC4_PREDICT_TRUE(cond)                                           \
+  ? (void)0                                                         \
+  : OstreamVoider()                                                 \
+          & CVC4ApiRecoverableExceptionStream().ostream()           \
+                << "Invalid argument '" << arg << "' for '" << #arg \
+                << "', expected "
+
 #define CVC4_API_ARG_SIZE_CHECK_EXPECTED(cond, arg) \
   CVC4_PREDICT_TRUE(cond)                           \
   ? (void)0                                         \
@@ -841,6 +850,10 @@ class CVC4ApiRecoverableExceptionStream
   try                                   \
   {
 #define CVC4_API_SOLVER_TRY_CATCH_END                                          \
+  }                                                                            \
+  catch (const UnrecognizedOptionException& e)                                 \
+  {                                                                            \
+    throw CVC4ApiRecoverableException(e.getMessage());                         \
   }                                                                            \
   catch (const CVC4::RecoverableModalException& e)                             \
   {                                                                            \
@@ -1433,10 +1446,10 @@ uint32_t Op::getIndices() const
     case INT_TO_BITVECTOR: i = d_node->getConst<IntToBitVector>().d_size; break;
     case IAND: i = d_node->getConst<IntAnd>().d_size; break;
     case FLOATINGPOINT_TO_UBV:
-      i = d_node->getConst<FloatingPointToUBV>().bvs.d_size;
+      i = d_node->getConst<FloatingPointToUBV>().d_bv_size.d_size;
       break;
     case FLOATINGPOINT_TO_SBV:
-      i = d_node->getConst<FloatingPointToSBV>().bvs.d_size;
+      i = d_node->getConst<FloatingPointToSBV>().d_bv_size.d_size;
       break;
     case TUPLE_UPDATE: i = d_node->getConst<TupleUpdate>().getIndex(); break;
     case REGEXP_REPEAT:
@@ -1469,36 +1482,42 @@ std::pair<uint32_t, uint32_t> Op::getIndices() const
   {
     CVC4::FloatingPointToFPIEEEBitVector ext =
         d_node->getConst<FloatingPointToFPIEEEBitVector>();
-    indices = std::make_pair(ext.t.exponent(), ext.t.significand());
+    indices = std::make_pair(ext.d_fp_size.exponentWidth(),
+                             ext.d_fp_size.significandWidth());
   }
   else if (k == FLOATINGPOINT_TO_FP_FLOATINGPOINT)
   {
     CVC4::FloatingPointToFPFloatingPoint ext =
         d_node->getConst<FloatingPointToFPFloatingPoint>();
-    indices = std::make_pair(ext.t.exponent(), ext.t.significand());
+    indices = std::make_pair(ext.d_fp_size.exponentWidth(),
+                             ext.d_fp_size.significandWidth());
   }
   else if (k == FLOATINGPOINT_TO_FP_REAL)
   {
     CVC4::FloatingPointToFPReal ext = d_node->getConst<FloatingPointToFPReal>();
-    indices = std::make_pair(ext.t.exponent(), ext.t.significand());
+    indices = std::make_pair(ext.d_fp_size.exponentWidth(),
+                             ext.d_fp_size.significandWidth());
   }
   else if (k == FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR)
   {
     CVC4::FloatingPointToFPSignedBitVector ext =
         d_node->getConst<FloatingPointToFPSignedBitVector>();
-    indices = std::make_pair(ext.t.exponent(), ext.t.significand());
+    indices = std::make_pair(ext.d_fp_size.exponentWidth(),
+                             ext.d_fp_size.significandWidth());
   }
   else if (k == FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR)
   {
     CVC4::FloatingPointToFPUnsignedBitVector ext =
         d_node->getConst<FloatingPointToFPUnsignedBitVector>();
-    indices = std::make_pair(ext.t.exponent(), ext.t.significand());
+    indices = std::make_pair(ext.d_fp_size.exponentWidth(),
+                             ext.d_fp_size.significandWidth());
   }
   else if (k == FLOATINGPOINT_TO_FP_GENERIC)
   {
     CVC4::FloatingPointToFPGeneric ext =
         d_node->getConst<FloatingPointToFPGeneric>();
-    indices = std::make_pair(ext.t.exponent(), ext.t.significand());
+    indices = std::make_pair(ext.d_fp_size.exponentWidth(),
+                             ext.d_fp_size.significandWidth());
   }
   else if (k == REGEXP_LOOP)
   {
@@ -2054,6 +2073,106 @@ CVC4::Expr Term::getExpr(void) const
 // to the new API. !!!
 const CVC4::Node& Term::getNode(void) const { return *d_node; }
 
+namespace detail {
+const Rational& getRational(const CVC4::Node& node)
+{
+  return node.getConst<Rational>();
+}
+Integer getInteger(const CVC4::Node& node)
+{
+  return node.getConst<Rational>().getNumerator();
+}
+template <typename T>
+bool checkIntegerBounds(const Integer& i)
+{
+  return i >= std::numeric_limits<T>::min()
+         && i <= std::numeric_limits<T>::max();
+}
+bool checkReal32Bounds(const Rational& r)
+{
+  return checkIntegerBounds<std::int32_t>(r.getNumerator())
+         && checkIntegerBounds<std::uint32_t>(r.getDenominator());
+}
+bool checkReal64Bounds(const Rational& r)
+{
+  return checkIntegerBounds<std::int64_t>(r.getNumerator())
+         && checkIntegerBounds<std::uint64_t>(r.getDenominator());
+}
+
+bool isInteger(const Node& node)
+{
+  return node.getKind() == CVC4::Kind::CONST_RATIONAL
+         && node.getConst<Rational>().isIntegral();
+}
+bool isInt32(const Node& node)
+{
+  return isInteger(node)
+         && checkIntegerBounds<std::int32_t>(getInteger(node));
+}
+bool isUInt32(const Node& node)
+{
+  return isInteger(node)
+         && checkIntegerBounds<std::uint32_t>(getInteger(node));
+}
+bool isInt64(const Node& node)
+{
+  return isInteger(node)
+         && checkIntegerBounds<std::int64_t>(getInteger(node));
+}
+bool isUInt64(const Node& node)
+{
+  return isInteger(node)
+         && checkIntegerBounds<std::uint64_t>(getInteger(node));
+}
+}  // namespace detail
+
+bool Term::isInt32() const { return detail::isInt32(*d_node); }
+std::int32_t Term::getInt32() const
+{
+  CVC4_API_CHECK(detail::isInt32(*d_node))
+      << "Term should be a Int32 when calling getInt32()";
+  return detail::getInteger(*d_node).getSignedInt();
+}
+bool Term::isUInt32() const { return detail::isUInt32(*d_node); }
+std::uint32_t Term::getUInt32() const
+{
+  CVC4_API_CHECK(detail::isUInt32(*d_node))
+      << "Term should be a UInt32 when calling getUInt32()";
+  return detail::getInteger(*d_node).getUnsignedInt();
+}
+bool Term::isInt64() const { return detail::isInt64(*d_node); }
+std::int64_t Term::getInt64() const
+{
+  CVC4_API_CHECK(detail::isInt64(*d_node))
+      << "Term should be a Int64 when calling getInt64()";
+  return detail::getInteger(*d_node).getLong();
+}
+bool Term::isUInt64() const { return detail::isUInt64(*d_node); }
+std::uint64_t Term::getUInt64() const
+{
+  CVC4_API_CHECK(detail::isUInt64(*d_node))
+      << "Term should be a UInt64 when calling getUInt64()";
+  return detail::getInteger(*d_node).getUnsignedLong();
+}
+bool Term::isInteger() const { return detail::isInteger(*d_node); }
+std::string Term::getInteger() const
+{
+  CVC4_API_CHECK(detail::isInteger(*d_node))
+      << "Term should be an Int when calling getIntString()";
+  return detail::getInteger(*d_node).toString();
+}
+
+bool Term::isString() const
+{
+  return d_node->getKind() == CVC4::Kind::CONST_STRING;
+}
+std::wstring Term::getString() const
+{
+  CVC4_API_CHECK(d_node->getKind() == CVC4::Kind::CONST_STRING)
+      << "Term should be a String when calling getString()";
+  return d_node->getConst<CVC4::String>().toWString();
+}
+
 std::ostream& operator<<(std::ostream& out, const Term& t)
 {
   out << t.toString();
@@ -2354,7 +2473,7 @@ Term DatatypeConstructor::getSpecializedConstructorTerm(Sort retSort) const
       << "Cannot get specialized constructor type for non-datatype type "
       << retSort;
   CVC4_API_SOLVER_TRY_CATCH_BEGIN;
-  
+
   NodeManager* nm = d_solver->getNodeManager();
   Node ret =
       nm->mkNode(kind::APPLY_TYPE_ASCRIPTION,
@@ -3054,24 +3173,24 @@ const static std::
     unordered_map<RoundingMode, CVC4::RoundingMode, RoundingModeHashFunction>
         s_rmodes{
             {ROUND_NEAREST_TIES_TO_EVEN,
-             CVC4::RoundingMode::roundNearestTiesToEven},
-            {ROUND_TOWARD_POSITIVE, CVC4::RoundingMode::roundTowardPositive},
-            {ROUND_TOWARD_NEGATIVE, CVC4::RoundingMode::roundTowardNegative},
-            {ROUND_TOWARD_ZERO, CVC4::RoundingMode::roundTowardZero},
+             CVC4::RoundingMode::ROUND_NEAREST_TIES_TO_EVEN},
+            {ROUND_TOWARD_POSITIVE, CVC4::RoundingMode::ROUND_TOWARD_POSITIVE},
+            {ROUND_TOWARD_NEGATIVE, CVC4::RoundingMode::ROUND_TOWARD_NEGATIVE},
+            {ROUND_TOWARD_ZERO, CVC4::RoundingMode::ROUND_TOWARD_ZERO},
             {ROUND_NEAREST_TIES_TO_AWAY,
-             CVC4::RoundingMode::roundNearestTiesToAway},
+             CVC4::RoundingMode::ROUND_NEAREST_TIES_TO_AWAY},
         };
 
 const static std::unordered_map<CVC4::RoundingMode,
                                 RoundingMode,
                                 CVC4::RoundingModeHashFunction>
     s_rmodes_internal{
-        {CVC4::RoundingMode::roundNearestTiesToEven,
+        {CVC4::RoundingMode::ROUND_NEAREST_TIES_TO_EVEN,
          ROUND_NEAREST_TIES_TO_EVEN},
-        {CVC4::RoundingMode::roundTowardPositive, ROUND_TOWARD_POSITIVE},
-        {CVC4::RoundingMode::roundTowardNegative, ROUND_TOWARD_NEGATIVE},
-        {CVC4::RoundingMode::roundTowardZero, ROUND_TOWARD_ZERO},
-        {CVC4::RoundingMode::roundNearestTiesToAway,
+        {CVC4::RoundingMode::ROUND_TOWARD_POSITIVE, ROUND_TOWARD_POSITIVE},
+        {CVC4::RoundingMode::ROUND_TOWARD_POSITIVE, ROUND_TOWARD_NEGATIVE},
+        {CVC4::RoundingMode::ROUND_TOWARD_ZERO, ROUND_TOWARD_ZERO},
+        {CVC4::RoundingMode::ROUND_NEAREST_TIES_TO_AWAY,
          ROUND_NEAREST_TIES_TO_AWAY},
     };
 
@@ -3087,7 +3206,7 @@ size_t RoundingModeHashFunction::operator()(const RoundingMode& rm) const
 Solver::Solver(Options* opts)
 {
   d_exprMgr.reset(new ExprManager);
-  d_smtEngine.reset(new SmtEngine(d_exprMgr.get(), opts));
+  d_smtEngine.reset(new SmtEngine(d_exprMgr->getNodeManager(), opts));
   d_smtEngine->setSolver(this);
   Options& o = d_smtEngine->getOptions();
   d_rng.reset(new Random(o[options::seed]));
@@ -3298,6 +3417,20 @@ Term Solver::mkTermHelper(Kind kind, const std::vector<Term>& children) const
       // element type can be used safely here.
       Node singleton = getNodeManager()->mkSingleton(type, *children[0].d_node);
       res = Term(this, singleton).getExpr();
+    }
+    else if (kind == api::MK_BAG)
+    {
+      // the type of the term is the same as the type of the internal node
+      // see Term::getSort()
+      TypeNode type = children[0].d_node->getType();
+      // Internally NodeManager::mkBag needs a type argument
+      // to construct a bag, since there is no difference between
+      // integers and reals (both are Rationals).
+      // At the API, mkReal and mkInteger are different and therefore the
+      // element type can be used safely here.
+      Node bag = getNodeManager()->mkBag(
+          type, *children[0].d_node, *children[1].d_node);
+      res = Term(this, bag).getExpr();
     }
     else
     {
@@ -3597,7 +3730,7 @@ Sort Solver::mkParamSort(const std::string& symbol) const
   CVC4_API_SOLVER_TRY_CATCH_BEGIN;
   return Sort(
       this,
-      getNodeManager()->mkSort(symbol, ExprManager::SORT_FLAG_PLACEHOLDER));
+      getNodeManager()->mkSort(symbol, NodeManager::SORT_FLAG_PLACEHOLDER));
   CVC4_API_SOLVER_TRY_CATCH_END;
 }
 
@@ -3631,7 +3764,7 @@ Sort Solver::mkRecordSort(
 {
   NodeManagerScope scope(getNodeManager());
   CVC4_API_SOLVER_TRY_CATCH_BEGIN;
-  std::vector<std::pair<std::string, Type>> f;
+  std::vector<std::pair<std::string, TypeNode>> f;
   size_t i = 0;
   for (const auto& p : fields)
   {
@@ -3642,10 +3775,10 @@ Sort Solver::mkRecordSort(
         this == p.second.d_solver, "parameter sort", p.second, i)
         << "sort associated to this solver object";
     i += 1;
-    f.emplace_back(p.first, p.second.d_type->toType());
+    f.emplace_back(p.first, *p.second.d_type);
   }
 
-  return Sort(this, getNodeManager()->mkRecordType(Record(f)));
+  return Sort(this, getNodeManager()->mkRecordType(f));
 
   CVC4_API_SOLVER_TRY_CATCH_END;
 }
@@ -4137,8 +4270,21 @@ Term Solver::mkConst(Sort sort, const std::string& symbol) const
   CVC4_API_ARG_CHECK_EXPECTED(!sort.isNull(), sort) << "non-null sort";
   CVC4_API_SOLVER_CHECK_SORT(sort);
 
-  Expr res = symbol.empty() ? d_exprMgr->mkVar(sort.d_type->toType())
-                            : d_exprMgr->mkVar(symbol, sort.d_type->toType());
+  Expr res = d_exprMgr->mkVar(symbol, sort.d_type->toType());
+  (void)res.getType(true); /* kick off type checking */
+  return Term(this, res);
+
+  CVC4_API_SOLVER_TRY_CATCH_END;
+}
+
+Term Solver::mkConst(Sort sort) const
+{
+  NodeManagerScope scope(getNodeManager());
+  CVC4_API_SOLVER_TRY_CATCH_BEGIN;
+  CVC4_API_ARG_CHECK_EXPECTED(!sort.isNull(), sort) << "non-null sort";
+  CVC4_API_SOLVER_CHECK_SORT(sort);
+
+  Expr res = d_exprMgr->mkVar(sort.d_type->toType());
   (void)res.getType(true); /* kick off type checking */
   return Term(this, res);
 
@@ -5064,7 +5210,7 @@ std::vector<Term> Solver::getAssertions(void) const
 std::string Solver::getInfo(const std::string& flag) const
 {
   CVC4_API_SOLVER_TRY_CATCH_BEGIN;
-  CVC4_API_CHECK(d_smtEngine->isValidGetInfoFlag(flag))
+  CVC4_API_RECOVERABLE_CHECK(d_smtEngine->isValidGetInfoFlag(flag))
       << "Unrecognized flag for getInfo.";
 
   return d_smtEngine->getInfo(flag).toString();
@@ -5154,11 +5300,11 @@ std::vector<Term> Solver::getValue(const std::vector<Term>& terms) const
 {
   CVC4_API_SOLVER_TRY_CATCH_BEGIN;
   CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));
-  CVC4_API_CHECK(d_smtEngine->getOptions()[options::produceModels])
+  CVC4_API_RECOVERABLE_CHECK(d_smtEngine->getOptions()[options::produceModels])
       << "Cannot get value unless model generation is enabled "
          "(try --produce-models)";
-  CVC4_API_CHECK(d_smtEngine->getSmtMode() != SmtMode::UNSAT)
-      << "Cannot get value when in unsat mode.";
+  CVC4_API_RECOVERABLE_CHECK(d_smtEngine->isSmtModeSat())
+      << "Cannot get value unless after a SAT or unknown response.";
   std::vector<Term> res;
   for (size_t i = 0, n = terms.size(); i < n; ++i)
   {
@@ -5216,8 +5362,8 @@ Term Solver::getSeparationHeap() const
   CVC4_API_CHECK(d_smtEngine->getOptions()[options::produceModels])
       << "Cannot get separation heap term unless model generation is enabled "
          "(try --produce-models)";
-  CVC4_API_CHECK(d_smtEngine->getSmtMode() != SmtMode::UNSAT)
-      << "Cannot get separtion heap term when in unsat mode.";
+  CVC4_API_RECOVERABLE_CHECK(d_smtEngine->isSmtModeSat())
+      << "Can only get separtion heap term after sat or unknown response.";
   return Term(this, d_smtEngine->getSepHeapExpr());
   CVC4_API_SOLVER_TRY_CATCH_END;
 }
@@ -5233,8 +5379,8 @@ Term Solver::getSeparationNilTerm() const
   CVC4_API_CHECK(d_smtEngine->getOptions()[options::produceModels])
       << "Cannot get separation nil term unless model generation is enabled "
          "(try --produce-models)";
-  CVC4_API_CHECK(d_smtEngine->getSmtMode() != SmtMode::UNSAT)
-      << "Cannot get separtion nil term when in unsat mode.";
+  CVC4_API_RECOVERABLE_CHECK(d_smtEngine->isSmtModeSat())
+      << "Can only get separtion nil term after sat or unknown response.";
   return Term(this, d_smtEngine->getSepNilExpr());
   CVC4_API_SOLVER_TRY_CATCH_END;
 }
@@ -5317,19 +5463,6 @@ bool Solver::getAbduct(Term conj, Grammar& g, Term& output) const
   CVC4_API_SOLVER_TRY_CATCH_END;
 }
 
-void Solver::printModel(std::ostream& out) const
-{
-  CVC4_API_SOLVER_TRY_CATCH_BEGIN;
-  CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));
-  CVC4_API_CHECK(d_smtEngine->getOptions()[options::produceModels])
-      << "Cannot get value unless model generation is enabled "
-         "(try --produce-models)";
-  CVC4_API_CHECK(d_smtEngine->getSmtMode() != SmtMode::UNSAT)
-      << "Cannot get value when in unsat mode.";
-  out << *d_smtEngine->getModel();
-  CVC4_API_SOLVER_TRY_CATCH_END;
-}
-
 void Solver::blockModel() const
 {
   CVC4_API_SOLVER_TRY_CATCH_BEGIN;
@@ -5337,8 +5470,8 @@ void Solver::blockModel() const
   CVC4_API_CHECK(d_smtEngine->getOptions()[options::produceModels])
       << "Cannot get value unless model generation is enabled "
          "(try --produce-models)";
-  CVC4_API_CHECK(d_smtEngine->getSmtMode() != SmtMode::UNSAT)
-      << "Cannot get value when in unsat mode.";
+  CVC4_API_RECOVERABLE_CHECK(d_smtEngine->isSmtModeSat())
+      << "Can only block model after sat or unknown response.";
   d_smtEngine->blockModel();
   CVC4_API_SOLVER_TRY_CATCH_END;
 }
@@ -5349,8 +5482,8 @@ void Solver::blockModelValues(const std::vector<Term>& terms) const
   CVC4_API_CHECK(d_smtEngine->getOptions()[options::produceModels])
       << "Cannot get value unless model generation is enabled "
          "(try --produce-models)";
-  CVC4_API_CHECK(d_smtEngine->getSmtMode() != SmtMode::UNSAT)
-      << "Cannot get value when in unsat mode.";
+  CVC4_API_RECOVERABLE_CHECK(d_smtEngine->isSmtModeSat())
+      << "Can only block model values after sat or unknown response.";
   CVC4_API_ARG_SIZE_CHECK_EXPECTED(!terms.empty(), terms)
       << "a non-empty set of terms";
   for (size_t i = 0, tsize = terms.size(); i < tsize; ++i)
@@ -5409,7 +5542,7 @@ void Solver::resetAssertions(void) const
 void Solver::setInfo(const std::string& keyword, const std::string& value) const
 {
   CVC4_API_SOLVER_TRY_CATCH_BEGIN;
-  CVC4_API_ARG_CHECK_EXPECTED(
+  CVC4_API_RECOVERABLE_ARG_CHECK_EXPECTED(
       keyword == "source" || keyword == "category" || keyword == "difficulty"
           || keyword == "filename" || keyword == "license" || keyword == "name"
           || keyword == "notes" || keyword == "smt-lib-version"
@@ -5417,10 +5550,10 @@ void Solver::setInfo(const std::string& keyword, const std::string& value) const
       keyword)
       << "'source', 'category', 'difficulty', 'filename', 'license', 'name', "
          "'notes', 'smt-lib-version' or 'status'";
-  CVC4_API_ARG_CHECK_EXPECTED(keyword != "smt-lib-version" || value == "2"
-                                  || value == "2.0" || value == "2.5"
-                                  || value == "2.6",
-                              value)
+  CVC4_API_RECOVERABLE_ARG_CHECK_EXPECTED(
+      keyword != "smt-lib-version" || value == "2" || value == "2.0"
+          || value == "2.5" || value == "2.6",
+      value)
       << "'2.0', '2.5', '2.6'";
   CVC4_API_ARG_CHECK_EXPECTED(keyword != "status" || value == "sat"
                                   || value == "unsat" || value == "unknown",
@@ -5496,7 +5629,7 @@ Term Solver::mkSygusVar(Sort sort, const std::string& symbol) const
   Node res = getNodeManager()->mkBoundVar(symbol, *sort.d_type);
   (void)res.getType(true); /* kick off type checking */
 
-  d_smtEngine->declareSygusVar(symbol, res, *sort.d_type);
+  d_smtEngine->declareSygusVar(res);
 
   return Term(this, res);
 
@@ -5621,7 +5754,7 @@ Term Solver::synthFunHelper(const std::string& symbol,
   std::vector<Node> bvns = termVectorToNodes(boundVars);
 
   d_smtEngine->declareSynthFun(
-      symbol, fun, g == nullptr ? funType : *g->resolve().d_type, isInv, bvns);
+      fun, g == nullptr ? funType : *g->resolve().d_type, isInv, bvns);
 
   return Term(this, fun);
 
@@ -5791,6 +5924,56 @@ SmtEngine* Solver::getSmtEngine(void) const { return d_smtEngine.get(); }
  * the new API. !!!
  */
 Options& Solver::getOptions(void) { return d_smtEngine->getOptions(); }
+
+/* -------------------------------------------------------------------------- */
+/* Optimization                                                               */
+/* -------------------------------------------------------------------------- */
+
+Objective::Objective(Term t, ObjectiveType type)
+    : d_type(type), d_term(t), d_result(OPT_UNKNOWN)
+{
+}
+
+Objective Solver::makeMinimize(Term t) const {}
+
+Objective Solver::makeMaximize(Term t) const {}
+
+Objective Solver::makeMinMax(const std::vector<Term>& terms) const {}
+
+Objective Solver::makeMaxMin(const std::vector<Term>& terms) const {}
+
+Objective Solver::assertSoft(Term t, Term w) const {}
+
+void Solver::assertObjective(Objective o) const {}
+
+ObjectiveType Solver::objectiveGetType(Objective o) const {return o.getObjectiveType();}
+
+OptResult Solver::objectiveGetResult(Objective o) const {return o.getOptResult();}
+
+Term Solver::objectiveGetTerm(Objective o) const {return o.getTerm();}
+
+Term Solver::objectiveGetLower(Objective o) const {}
+
+Term Solver::objectiveGetUpper(Objective o) const {}
+
+int Solver::loadObjectiveModel(Objective o) const {}
+
+std::vector<Term> Solver::getObjectives(void) const {
+  //not yet implemented, implement with multiobjective optimization
+  Assert(false);
+}
+
+//Term Solver::objectiveGetValue(Objective o, ObjectiveValue v) const {}
+
+void Solver::setResourceLimit(int limit) const {
+  //not yet implemented, implement with base and bound 
+  Assert(false);
+}
+
+void Solver::interrupt(void) const {
+  //not yet implemented, implement with base and bound
+  Assert(false);
+}
 
 /* -------------------------------------------------------------------------- */
 /* Conversions                                                                */

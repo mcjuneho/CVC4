@@ -5,7 +5,7 @@
  **   Mudathir Mohamed
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
+ ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
@@ -60,7 +60,7 @@ class BagsRewriter : public TheoryRewriter
    * rewrites for n include:
    * - (= A A) = true where A is a bag
    */
-  BagsRewriteResponse rewriteEqual(const TNode& n) const;
+  BagsRewriteResponse preRewriteEqual(const TNode& n) const;
 
   /**
    * rewrites for n include:
@@ -80,7 +80,7 @@ class BagsRewriter : public TheoryRewriter
   /**
    * rewrites for n include:
    * - (bag.count x emptybag) = 0
-   * - (bag.count x (mkBag x c) = c where c > 0 is a constant
+   * - (bag.count x (bag x c) = c
    * - otherwise = n
    */
   BagsRewriteResponse rewriteBagCount(const TNode& n) const;
@@ -202,9 +202,19 @@ class BagsRewriter : public TheoryRewriter
    */
   BagsRewriteResponse rewriteToSet(const TNode& n) const;
 
+  /**
+   *  rewrites for n include:
+   *  - (= A A) = true
+   *  - (= A B) = false if A and B are different bag constants
+   *  - (= B A) = (= A B) if A < B and at least one of A or B is not a constant
+   */
+  BagsRewriteResponse postRewriteEqual(const TNode& n) const;
+
  private:
   /** Reference to the rewriter statistics. */
   NodeManager* d_nm;
+  Node d_zero;
+  Node d_one;
   /** Reference to the rewriter statistics. */
   HistogramStat<Rewrite>* d_statistics;
 }; /* class TheoryBagsRewriter */

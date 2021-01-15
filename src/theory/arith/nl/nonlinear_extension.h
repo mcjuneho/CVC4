@@ -2,7 +2,7 @@
 /*! \file nonlinear_extension.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King, Gereon Kremer
+ **   Andrew Reynolds, Gereon Kremer, Tim King
  ** This file is part of the CVC4 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
@@ -18,8 +18,6 @@
 #ifndef CVC4__THEORY__ARITH__NL__NONLINEAR_EXTENSION_H
 #define CVC4__THEORY__ARITH__NL__NONLINEAR_EXTENSION_H
 
-#include <stdint.h>
-
 #include <map>
 #include <vector>
 
@@ -31,6 +29,7 @@
 #include "theory/arith/nl/ext/factoring_check.h"
 #include "theory/arith/nl/ext/monomial_bounds_check.h"
 #include "theory/arith/nl/ext/monomial_check.h"
+#include "theory/arith/nl/ext/proof_checker.h"
 #include "theory/arith/nl/ext/split_zero_check.h"
 #include "theory/arith/nl/ext/tangent_plane_check.h"
 #include "theory/arith/nl/ext_theory_callback.h"
@@ -40,7 +39,7 @@
 #include "theory/arith/nl/nl_model.h"
 #include "theory/arith/nl/stats.h"
 #include "theory/arith/nl/strategy.h"
-#include "theory/arith/nl/transcendental_solver.h"
+#include "theory/arith/nl/transcendental/transcendental_solver.h"
 #include "theory/ext_theory.h"
 #include "theory/uf/equality_engine.h"
 
@@ -78,7 +77,10 @@ class NonlinearExtension
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 
  public:
-  NonlinearExtension(TheoryArith& containing, ArithState& state, eq::EqualityEngine* ee);
+  NonlinearExtension(TheoryArith& containing,
+                     ArithState& state,
+                     eq::EqualityEngine* ee,
+                     ProofNodeManager* pnm);
   ~NonlinearExtension();
   /**
    * Does non-context dependent setup for a node connected to a theory.
@@ -228,8 +230,6 @@ class NonlinearExtension
   // The theory of arithmetic containing this extension.
   TheoryArith& d_containing;
   InferenceManager& d_im;
-  // pointer to used equality engine
-  eq::EqualityEngine* d_ee;
   /** The statistics class */
   NlStats d_stats;
   // needs last call effort
@@ -255,7 +255,9 @@ class NonlinearExtension
    * This is the subsolver responsible for running the procedure for
    * transcendental functions.
    */
-  TranscendentalSolver d_trSlv;
+  transcendental::TranscendentalSolver d_trSlv;
+  /** The proof checker for proofs of the nlext. */
+  ExtProofRuleChecker d_proofChecker;
   /**
    * Holds common lookup data for the checks implemented in the "nl-ext"
    * solvers (from Cimatti et al., TACAS 2017).

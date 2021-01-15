@@ -1151,6 +1151,59 @@ class CVC4_PUBLIC Term
   // to the new API. !!!
   const CVC4::Node& getNode(void) const;
 
+  /**
+   * Returns true if the term is an integer that fits within std::int32_t.
+   */
+  bool isInt32() const;
+  /**
+   * Returns the stored integer as a std::int32_t. Asserts isInt32().
+   */
+  std::int32_t getInt32() const;
+  /**
+   * Returns true if the term is an integer that fits within std::uint32_t.
+   */
+  bool isUInt32() const;
+  /**
+   * Returns the stored integer as a std::uint32_t. Asserts isUInt32().
+   */
+  std::uint32_t getUInt32() const;
+  /**
+   * Returns true if the term is an integer that fits within std::int64_t.
+   */
+  bool isInt64() const;
+  /**
+   * Returns the stored integer as a std::int64_t. Asserts isInt64().
+   */
+  std::int64_t getInt64() const;
+  /**
+   * Returns true if the term is an integer that fits within std::uint64_t.
+   */
+  bool isUInt64() const;
+  /**
+   * Returns the stored integer as a std::uint64_t. Asserts isUInt64().
+   */
+  std::uint64_t getUInt64() const;
+  /**
+   * Returns true if the term is an integer.
+   */
+  bool isInteger() const;
+  /**
+   * Returns the stored integer in (decimal) string representation. Asserts
+   * isInteger().
+   */
+  std::string getInteger() const;
+
+  /**
+   * Returns true if the term is a string constant.
+   */
+  bool isString() const;
+  /**
+   * Returns the stored string constant. This method is not to be confused with
+   * toString() which returns the term in some string representation, whatever
+   * data it may hold. Asserts isString().
+   */
+  std::wstring getString() const;
+
  protected:
   /**
    * The associated solver object.
@@ -2170,6 +2223,50 @@ struct CVC4_PUBLIC RoundingModeHashFunction
 };
 
 /* -------------------------------------------------------------------------- */
+/* Class and enums for optimization                                           */
+/* -------------------------------------------------------------------------- */
+
+enum CVC4_PUBLIC OptResult 
+{
+  OPT_UNKNOWN, 
+  OPT_UNSAT, 
+  OPT_SAT_PARTIAL, 
+  OPT_SAT_APPROX, 
+  OPT_OPTIMAL 
+};
+
+enum CVC4_PUBLIC ObjectiveType 
+{
+  OBJECTIVE_MINIMIZE, 
+  OBJECTIVE_MAXIMIZE
+};
+
+enum CVC4_PUBLIC ObjectiveValue
+{
+  OPTIMUM,
+  FINAL_LOWER,
+  FINAL_UPPER,
+  FINAL_ERROR
+};
+
+class CVC4_PUBLIC Objective
+{
+  friend class solver;
+
+  public:
+  ObjectiveType getObjectiveType() {return d_type;}
+  OptResult getOptResult() {return d_result;}
+  Term getTerm() {return d_term;}
+  Objective(Term t, ObjectiveType d_type);
+  //~Objective();
+
+  private:
+  ObjectiveType d_type;
+  OptResult d_result;
+  Term d_term;
+};
+
+/* -------------------------------------------------------------------------- */
 /* Solver                                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -2829,7 +2926,15 @@ class CVC4_PUBLIC Solver
    * @param symbol the name of the constant
    * @return the first-order constant
    */
-  Term mkConst(Sort sort, const std::string& symbol = std::string()) const;
+  Term mkConst(Sort sort, const std::string& symbol) const;
+  /**
+   * Create (first-order) constant (0-arity function symbol), with a default
+   * symbol name.
+   *
+   * @param sort the sort of the constant
+   * @return the first-order constant
+   */
+  Term mkConst(Sort sort) const;
 
   /**
    * Create a bound variable to be used in a binder (i.e. a quantifier, a
@@ -3234,13 +3339,6 @@ class CVC4_PUBLIC Solver
   bool getAbduct(Term conj, Grammar& g, Term& output) const;
 
   /**
-   * Print the model of a satisfiable query to the given output stream.
-   * Requires to enable option 'produce-models'.
-   * @param out the output stream
-   */
-  void printModel(std::ostream& out) const;
-
-  /**
    * Block the current model. Can be called only if immediately preceded by a
    * SAT or INVALID query.
    * SMT-LIB: ( block-model )
@@ -3443,6 +3541,96 @@ class CVC4_PUBLIC Solver
   // !!! This is only temporarily available until options are refactored at
   // the driver level. !!!
   Options& getOptions(void);
+
+  /* .................................................................... */
+  /* Optimization                                                         */
+  /* .................................................................... */
+
+  /**
+   * Creates an objective of type minimize. Returned to user.
+   */
+  Objective makeMinimize(Term t) const;
+
+  /**
+   * Creates an objective of type maximize. Returned to user.
+   */
+  Objective makeMaximize(Term t) const;
+
+  /**
+   * Creates an objective of type min(max t1, max t2). Returned to user.
+   */
+  Objective makeMinMax(const std::vector<Term>& terms) const;
+
+  /**
+   * Creates an objective of type max(min t1, min t2). Returned to user.
+   */
+  Objective makeMaxMin(const std::vector<Term>& terms) const;
+
+  /**
+   * Makes and asserts a soft assertion with weight w
+   */
+  Objective assertSoft(Term t, Term w) const;
+
+  /**
+   * Asserts the objective to make the solver optimize it
+   **/
+  void assertObjective(Objective o) const;
+
+  /**
+   * Gets the value of the objectives:
+      last optimum value
+      final lower bound
+      final upper bound
+      final error value
+   **/
+  //Term objectiveGetValue(Objective o, ObjectiveValue v) const;
+
+  /**
+   * Asserts the objective to make the solver optimize it
+   **/
+  ObjectiveType objectiveGetType(Objective o) const;
+
+  /**
+   * Asserts the objective to make the solver optimize it
+   **/
+  OptResult objectiveGetResult(Objective o) const;
+
+  /**
+   * Get the term related to an objective
+   */
+  Term objectiveGetTerm(Objective o) const;
+
+  /**
+   * Gets the lower bound on objective after solver:
+   *  finishes, hits resource limit, or gets intterupted
+   */
+  Term objectiveGetLower(Objective o) const;
+
+  /**
+   * Gets the upper bound on objective after solver:
+   *  finishes, hits resource limit, or gets intterupted
+   */
+  Term objectiveGetUpper(Objective o) const;
+
+  /**
+   * Loads the model associated to the objective
+   */
+  int loadObjectiveModel(Objective o) const;
+
+  /**
+   * Gets statistics on the current optimization state
+   */
+  std::vector<Term> getObjectives(void) const;
+
+  /**
+   * Sets the resource limit on our solver to prevent infinite recursion
+   */
+  void setResourceLimit(int limit) const;
+
+  /**
+   * interrupts solver, allowing for approximation of objective
+   */
+  void interrupt(void) const;
 
  private:
   /* Helper to convert a vector of internal types to sorts. */
