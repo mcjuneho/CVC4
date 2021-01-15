@@ -2223,6 +2223,50 @@ struct CVC4_PUBLIC RoundingModeHashFunction
 };
 
 /* -------------------------------------------------------------------------- */
+/* Class and enums for optimization                                           */
+/* -------------------------------------------------------------------------- */
+
+enum CVC4_PUBLIC OptResult 
+{
+  OPT_UNKNOWN, 
+  OPT_UNSAT, 
+  OPT_SAT_PARTIAL, 
+  OPT_SAT_APPROX, 
+  OPT_OPTIMAL 
+};
+
+enum CVC4_PUBLIC ObjectiveType 
+{
+  OBJECTIVE_MINIMIZE, 
+  OBJECTIVE_MAXIMIZE
+};
+
+enum CVC4_PUBLIC ObjectiveValue
+{
+  OPTIMUM,
+  FINAL_LOWER,
+  FINAL_UPPER,
+  FINAL_ERROR
+};
+
+class CVC4_PUBLIC Objective
+{
+  friend class solver;
+
+  public:
+  ObjectiveType getObjectiveType() {return d_type;}
+  OptResult getOptResult() {return d_result;}
+  Term getTerm() {return d_term;}
+  Objective(Term t, ObjectiveType d_type);
+  //~Objective();
+
+  private:
+  ObjectiveType d_type;
+  OptResult d_result;
+  Term d_term;
+};
+
+/* -------------------------------------------------------------------------- */
 /* Solver                                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -3497,6 +3541,96 @@ class CVC4_PUBLIC Solver
   // !!! This is only temporarily available until options are refactored at
   // the driver level. !!!
   Options& getOptions(void);
+
+  /* .................................................................... */
+  /* Optimization                                                         */
+  /* .................................................................... */
+
+  /**
+   * Creates an objective of type minimize. Returned to user.
+   */
+  Objective makeMinimize(Term t) const;
+
+  /**
+   * Creates an objective of type maximize. Returned to user.
+   */
+  Objective makeMaximize(Term t) const;
+
+  /**
+   * Creates an objective of type min(max t1, max t2). Returned to user.
+   */
+  Objective makeMinMax(const std::vector<Term>& terms) const;
+
+  /**
+   * Creates an objective of type max(min t1, min t2). Returned to user.
+   */
+  Objective makeMaxMin(const std::vector<Term>& terms) const;
+
+  /**
+   * Makes and asserts a soft assertion with weight w
+   */
+  Objective assertSoft(Term t, Term w) const;
+
+  /**
+   * Asserts the objective to make the solver optimize it
+   **/
+  void assertObjective(Objective o) const;
+
+  /**
+   * Gets the value of the objectives:
+      last optimum value
+      final lower bound
+      final upper bound
+      final error value
+   **/
+  //Term objectiveGetValue(Objective o, ObjectiveValue v) const;
+
+  /**
+   * Asserts the objective to make the solver optimize it
+   **/
+  ObjectiveType objectiveGetType(Objective o) const;
+
+  /**
+   * Asserts the objective to make the solver optimize it
+   **/
+  OptResult objectiveGetResult(Objective o) const;
+
+  /**
+   * Get the term related to an objective
+   */
+  Term objectiveGetTerm(Objective o) const;
+
+  /**
+   * Gets the lower bound on objective after solver:
+   *  finishes, hits resource limit, or gets intterupted
+   */
+  Term objectiveGetLower(Objective o) const;
+
+  /**
+   * Gets the upper bound on objective after solver:
+   *  finishes, hits resource limit, or gets intterupted
+   */
+  Term objectiveGetUpper(Objective o) const;
+
+  /**
+   * Loads the model associated to the objective
+   */
+  int loadObjectiveModel(Objective o) const;
+
+  /**
+   * Gets statistics on the current optimization state
+   */
+  std::vector<Term> getObjectives(void) const;
+
+  /**
+   * Sets the resource limit on our solver to prevent infinite recursion
+   */
+  void setResourceLimit(int limit) const;
+
+  /**
+   * interrupts solver, allowing for approximation of objective
+   */
+  void interrupt(void) const;
 
  private:
   /* Helper to convert a vector of internal types to sorts. */
