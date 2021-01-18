@@ -14,3 +14,4 @@ generated/
 /debug/
 /antlr-3.4
 deps/
+/.vscode/

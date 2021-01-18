@@ -3572,7 +3572,8 @@ class CVC4_PUBLIC Solver
   Objective assertSoft(Term t, Term w) const;
 
   /**
-   * Asserts the objective to make the solver optimize it
+   * Asserts the objective to optimization subsolver. Objective will be
+   *optimized.
    **/
   void assertObjective(Objective o) const;
 

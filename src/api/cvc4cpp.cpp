@@ -5958,22 +5958,13 @@ Term Solver::objectiveGetUpper(Objective o) const {}
 
 int Solver::loadObjectiveModel(Objective o) const {}
 
-std::vector<Term> Solver::getObjectives(void) const {
-  //not yet implemented, implement with multiobjective optimization
-  Assert(false);
-}
+std::vector<Term> Solver::getObjectives(void) const {}
 
 //Term Solver::objectiveGetValue(Objective o, ObjectiveValue v) const {}
 
-void Solver::setResourceLimit(int limit) const {
-  //not yet implemented, implement with base and bound 
-  Assert(false);
-}
+void Solver::setResourceLimit(int limit) const {}
 
-void Solver::interrupt(void) const {
-  //not yet implemented, implement with base and bound
-  Assert(false);
-}
+void Solver::interrupt(void) const {}
 
 /* -------------------------------------------------------------------------- */
 /* Conversions                                                                */
