@@ -9,7 +9,7 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief The solver for interpolation queries
+ ** \brief The solver for optimization queries
  **/
 
 #include "cvc4_private.h"
@@ -29,7 +29,7 @@ class SmtEngine;
 namespace smt {
 
 /**
- * A solver for interpolation queries.
+ * A solver for optimization queries.
  *
  * This class is responsible for responding to get-interpol commands. It spawns
  * a subsolver SmtEngine for a sygus conjecture that captures the interpolation

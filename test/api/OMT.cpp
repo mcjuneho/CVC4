@@ -13,14 +13,21 @@ int main()
     Term ub = slv.mkReal(100);
     Term lb = slv.mkReal(0);
     Term cost = slv.mkConst(slv.getIntegerSort(), "cost");
+    Term cost2 = slv.mkConst(slv.getIntegerSort(), "cost2");
     // Term bound = slv.mkBitVector(8, 4);
     Term upb = slv.mkTerm(Kind::GT, ub, cost);
     Term lowb = slv.mkTerm(Kind::GT, cost, lb);
+    Term upb2 = slv.mkTerm(Kind::GT, ub, cost2);
+    Term lowb2 = slv.mkTerm(Kind::GT, cost2, lb);
     slv.assertFormula(upb);
     slv.assertFormula(lowb);
-    Objective o = slv.makeMaxObjective(cost);
-    slv.activateObjective(o);
+    slv.assertFormula(upb2);
+    slv.assertFormula(lowb2);
+    Objective maximize = slv.makeMaxObjective(cost);
+    Objective minimize = slv.makeMinObjective(cost2);
+    slv.activateObjective(maximize);
+    slv.activateObjective(minimize);
     std::cout << "Result is :" << slv.checkAndOpt() << std::endl;
-    std::cout << "Optimized value is: " << slv.objectiveGetValue(o)
-              << std::endl;
+    std::cout << "Optimized max value is: " << slv.objectiveGetValue(maximize) << std::endl;
+    std::cout << "Optimized min value is: " << slv.objectiveGetValue(minimize) << std::endl;
 }

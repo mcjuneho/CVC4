@@ -3549,18 +3549,18 @@ class CVC4_PUBLIC Solver
   /**
    * Creates an objective of type minimize. Returned to user.
    */
-  Objective makeMinimize(Term t) const;
+  Objective makeMinObjective(Term t) const;
 
   /**
    * Creates an objective of type maximize. Returned to user.
    */
-  Objective makeMaximize(Term t) const;
+  Objective makeMaxObjective(Term t) const;
 
   /**
    * Asserts the objective to optimization subsolver. Objective will be
    *optimized.
    **/
-  void assertObjective(Objective o) const;
+  void activateObjective(Objective o) const;
 
   /**
    * Runs the optimization subsolver optimization loop. Returns the result of

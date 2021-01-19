@@ -1591,8 +1591,6 @@ bool SmtEngine::getInterpol(const Node& conj, Node& interpol)
 }
 
 Result SmtEngine::checkOpt(){
-  // SmtScope smts(this);
-  // finishInit();
   Result r;
   bool success = d_optSolver->checkOpt(r);
   return r;
@@ -1600,8 +1598,6 @@ Result SmtEngine::checkOpt(){
 
 Node SmtEngine::objectiveGetValue(const Node& obj)
 {
-  // SmtScope smts(this);
-  // finishInit();
   return d_optSolver->objectiveGetValue(obj);
 }
 

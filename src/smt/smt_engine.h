@@ -646,11 +646,16 @@ class CVC4_PUBLIC SmtEngine
    * This method asks this SMT engine to optimize any asserted objectives with
    * respect to the current assertion stack (call it A)
    */
-
   Result checkOpt();
 
+  /**
+   * Gets the optimized values of the objective provided
+   */
   Node objectiveGetValue(const Node& obj);
 
+  /**
+   * Makes the optimization subsolver optimize for the objective
+   */
   void activateObj(const Node& obj, const int& type, const int& result);
 
   /**

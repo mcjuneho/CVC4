@@ -5934,11 +5934,11 @@ Objective::Objective(Term t, ObjectiveType type)
 {
 }
 
-Objective Solver::makeMinimize(Term t) const {return Objective(t, OBJECTIVE_MINIMIZE);}
+Objective Solver::makeMinObjective(Term t) const {return Objective(t, OBJECTIVE_MINIMIZE);}
 
-Objective Solver::makeMaximize(Term t) const {return Objective(t, OBJECTIVE_MAXIMIZE);}
+Objective Solver::makeMaxObjective(Term t) const {return Objective(t, OBJECTIVE_MAXIMIZE);}
 
-void Solver::assertObjective(Objective o) const {
+void Solver::activateObjective(Objective o) const {
   CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));
   d_smtEngine->activateObj(*o.getTerm().d_node, o.getObjectiveType(), o.getOptResult());
 }

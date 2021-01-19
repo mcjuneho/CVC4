@@ -9,7 +9,7 @@
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
  **
- ** \brief The solver for interpolation queries
+ ** \brief The solver for optimization queries
  **/
 
 #include "smt/optimization_solver.h"
@@ -43,20 +43,21 @@ bool OptimizationSolver::checkOpt(Result& r){
         optChecker->assertFormula(e);
     }
     
-    //while()
     NodeManager* nm = optChecker->getNodeManager();
-    //ExprManager* em = optChecker->getExprManager();
 
     for (int i = 0; i < d_activatedObjectives.size(); i++)
     {
+      optChecker->push();
       Objective o = d_activatedObjectives[i];
       // CVC4::Kind k = o.d_node.getKind();
 
       r = optChecker->checkSat();
 
-      // optChecker->push();
+      Result loop_r = r;
 
-      while (r.isSat())
+      
+
+      while (loop_r.isSat())
       {
         Node value = optChecker->getValue(o.d_node);
         o.d_savedValue = value;
@@ -70,12 +71,12 @@ bool OptimizationSolver::checkOpt(Result& r){
           increment = nm->mkNode(kind::LT, o.d_node, value);
         }
         optChecker->assertFormula(increment);
-        r = optChecker->checkSat();
+        loop_r = optChecker->checkSat();
       }
 
       d_activatedObjectives[i] = o;
 
-      // optChecker->pop();
+      optChecker->pop();
     }
 
     return true;
