@@ -105,6 +105,7 @@ class SmtSolver;
 class SygusSolver;
 class AbductionSolver;
 class InterpolationSolver;
+class OptimizationSolver;
 class QuantElimSolver;
 /**
  * Representation of a defined function.  We keep these around in
@@ -640,6 +641,17 @@ class CVC4_PUBLIC SmtEngine
 
   /** Same as above, but without user-provided grammar restrictions */
   bool getInterpol(const Node& conj, Node& interpol);
+  
+  /**
+   * This method asks this SMT engine to optimize any asserted objectives with
+   * respect to the current assertion stack (call it A)
+   */
+
+  Result checkOpt();
+
+  Node objectiveGetValue(const Node& obj);
+
+  void activateObj(const Node& obj, const int& type, const int& result);
 
   /**
    * This method asks this SMT engine to find an abduct with respect to the
@@ -1100,6 +1112,8 @@ class CVC4_PUBLIC SmtEngine
   std::unique_ptr<smt::AbductionSolver> d_abductSolver;
   /** The solver for interpolation queries */
   std::unique_ptr<smt::InterpolationSolver> d_interpolSolver;
+  /** The solver for optimization queries */
+  std::unique_ptr<smt::OptimizationSolver> d_optSolver;
   /** The solver for quantifier elimination queries */
   std::unique_ptr<smt::QuantElimSolver> d_quantElimSolver;
   /**
