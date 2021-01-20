@@ -28,6 +28,8 @@ int main()
     slv.activateObjective(maximize);
     slv.activateObjective(minimize);
     std::cout << "Result is :" << slv.checkAndOpt() << std::endl;
-    std::cout << "Optimized max value is: " << slv.objectiveGetValue(maximize) << std::endl;
-    std::cout << "Optimized min value is: " << slv.objectiveGetValue(minimize) << std::endl;
+    std::cout << "Optimized max value is: " << slv.objectiveGetValue(maximize)
+              << std::endl;
+    std::cout << "Optimized min value is: " << slv.objectiveGetValue(minimize)
+              << std::endl;
 }

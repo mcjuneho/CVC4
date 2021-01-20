@@ -55,8 +55,6 @@ bool OptimizationSolver::checkOpt(Result& r){
 
       Result loop_r = r;
 
-      
-
       while (loop_r.isSat())
       {
         Node value = optChecker->getValue(o.d_node);
