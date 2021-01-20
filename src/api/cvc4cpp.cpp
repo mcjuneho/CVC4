@@ -5930,41 +5930,63 @@ Options& Solver::getOptions(void) { return d_smtEngine->getOptions(); }
 /* -------------------------------------------------------------------------- */
 
 Objective::Objective(Term t, ObjectiveType type)
-    : d_type(type), d_term(t), d_result(OPT_UNKNOWN)
+    : d_type(type), d_result(OPT_UNKNOWN), d_term(t)
 {
 }
 
-Objective Solver::makeMinimize(Term t) const {}
+Objective Solver::makeMinObjective(Term t) const
+{
+  return Objective(t, OBJECTIVE_MINIMIZE);
+}
 
-Objective Solver::makeMaximize(Term t) const {}
+Objective Solver::makeMaxObjective(Term t) const
+{
+  return Objective(t, OBJECTIVE_MAXIMIZE);
+}
 
-Objective Solver::makeMinMax(const std::vector<Term>& terms) const {}
+void Solver::activateObjective(Objective o) const
+{
+  CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));
+  d_smtEngine->activateObj(*o.getTerm().d_node, o.getObjectiveType(), o.getOptResult());
+}
 
-Objective Solver::makeMaxMin(const std::vector<Term>& terms) const {}
+Result Solver::checkAndOpt() const {
+  CVC4::ExprManagerScope exmgrs(*(d_exprMgr.get()));
+  return d_smtEngine->checkOpt();
+}
 
-Objective Solver::assertSoft(Term t, Term w) const {}
+Term Solver::objectiveGetValue(Objective o) const
+{
+  Node value = d_smtEngine->objectiveGetValue(*o.getTerm().d_node);
+  // std::cout<< "final cost is: " << value <<std::endl;
+  return Term(this, value);
+}
 
-void Solver::assertObjective(Objective o) const {}
+//Objective Solver::makeMinMax(const std::vector<Term>& terms) const {}
 
-ObjectiveType Solver::objectiveGetType(Objective o) const {return o.getObjectiveType();}
+//Objective Solver::makeMaxMin(const std::vector<Term>& terms) const {}
 
-OptResult Solver::objectiveGetResult(Objective o) const {return o.getOptResult();}
+//Objective Solver::assertSoft(Term t, Term w) const {}
 
-Term Solver::objectiveGetTerm(Objective o) const {return o.getTerm();}
+//ObjectiveType Solver::objectiveGetType(Objective o) const {return o.getObjectiveType();}
 
-Term Solver::objectiveGetLower(Objective o) const {}
+//OptResult Solver::objectiveGetResult(Objective o) const {return o.getOptResult();}
 
-Term Solver::objectiveGetUpper(Objective o) const {}
+//Term Solver::objectiveGetTerm(Objective o) const {return o.getTerm();}
 
-int Solver::loadObjectiveModel(Objective o) const {}
+//Term Solver::objectiveGetLower(Objective o) const {}
 
-std::vector<Term> Solver::getObjectives(void) const {}
+//Term Solver::objectiveGetUpper(Objective o) const {}
+
+//int Solver::loadObjectiveModel(Objective o) const {}
+
+//std::vector<Term> Solver::getObjectives(void) const {}
 
 //Term Solver::objectiveGetValue(Objective o, ObjectiveValue v) const {}
 
-void Solver::setResourceLimit(int limit) const {}
+//void Solver::setResourceLimit(int limit) const {}
 
-void Solver::interrupt(void) const {}
+//void Solver::interrupt(void) const {}
 
 /* -------------------------------------------------------------------------- */
 /* Conversions                                                                */

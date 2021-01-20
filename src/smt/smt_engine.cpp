@@ -39,6 +39,7 @@
 #include "smt/defined_function.h"
 #include "smt/dump_manager.h"
 #include "smt/interpolation_solver.h"
+#include "smt/optimization_solver.h"
 #include "smt/listeners.h"
 #include "smt/logic_request.h"
 #include "smt/model_blocker.h"
@@ -91,6 +92,7 @@ SmtEngine::SmtEngine(NodeManager* nm, Options* optr)
       d_sygusSolver(nullptr),
       d_abductSolver(nullptr),
       d_interpolSolver(nullptr),
+      d_optSolver(nullptr),
       d_quantElimSolver(nullptr),
       d_logic(),
       d_originalOptions(),
@@ -282,6 +284,9 @@ void SmtEngine::finishInit()
   {
     d_interpolSolver.reset(new InterpolationSolver(this));
   }
+
+  //need to move this into an if with an option at a later date
+  d_optSolver.reset(new OptimizationSolver(this));
 
   d_pp->finishInit();
 
@@ -1583,6 +1588,23 @@ bool SmtEngine::getInterpol(const Node& conj, Node& interpol)
 {
   TypeNode grammarType;
   return getInterpol(conj, grammarType, interpol);
+}
+
+Result SmtEngine::checkOpt(){
+  Result r;
+  bool success = d_optSolver->checkOpt(r);
+  return r;
+}
+
+Node SmtEngine::objectiveGetValue(const Node& obj)
+{
+  return d_optSolver->objectiveGetValue(obj);
+}
+
+void SmtEngine::activateObj(const Node& obj, const int& type, const int& result){
+  SmtScope smts(this);
+  finishInit();
+  d_optSolver->activateObj(obj, type, result);
 }
 
 bool SmtEngine::getAbduct(const Node& conj,

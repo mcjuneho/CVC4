@@ -230,6 +230,8 @@ libcvc4_add_sources(
   smt/logic_request.h
   smt/interpolation_solver.cpp
   smt/interpolation_solver.h
+  smt/optimization_solver.cpp
+  smt/optimization_solver.h
   smt/managed_ostreams.cpp
   smt/managed_ostreams.h
   smt/model.cpp
