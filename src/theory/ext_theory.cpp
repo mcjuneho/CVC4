@@ -20,7 +20,9 @@
 
 #include "base/check.h"
 #include "smt/smt_statistics_registry.h"
+#include "theory/output_channel.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/rewriter.h"
 #include "theory/substitutions.h"
 
 using namespace std;
@@ -436,28 +438,6 @@ void ExtTheory::registerTerm(Node n)
       d_extf_info[n].d_vars = collectVars(n);
     }
   }
-}
-
-void ExtTheory::registerTermRec(Node n)
-{
-  std::unordered_set<TNode, TNodeHashFunction> visited;
-  std::vector<TNode> visit;
-  TNode cur;
-  visit.push_back(n);
-  do
-  {
-    cur = visit.back();
-    visit.pop_back();
-    if (visited.find(cur) == visited.end())
-    {
-      visited.insert(cur);
-      registerTerm(cur);
-      for (const Node& cc : cur)
-      {
-        visit.push_back(cc);
-      }
-    }
-  } while (!visit.empty());
 }
 
 // mark reduced

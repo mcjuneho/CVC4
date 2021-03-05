@@ -15,9 +15,11 @@
 #include "theory/arith/nl/ext/tangent_plane_check.h"
 
 #include "expr/node.h"
+#include "expr/proof.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/arith/inference_manager.h"
 #include "theory/arith/nl/nl_model.h"
+#include "theory/rewriter.h"
 
 namespace CVC4 {
 namespace theory {
@@ -146,8 +148,10 @@ void TangentPlaneCheck::check(bool asWaitingLemmas)
                                 b_v,
                                 nm->mkConst(Rational(d == 0 ? -1 : 1))});
               }
-              d_data->d_im.addPendingArithLemma(
-                  tlem, InferenceId::NL_TANGENT_PLANE, proof, asWaitingLemmas);
+              d_data->d_im.addPendingLemma(tlem,
+                                           InferenceId::ARITH_NL_TANGENT_PLANE,
+                                           proof,
+                                           asWaitingLemmas);
             }
           }
         }

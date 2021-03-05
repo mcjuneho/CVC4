@@ -20,9 +20,11 @@
 #include <map>
 
 #include "expr/node.h"
-#include "expr/proof_node.h"
+#include "expr/proof_rule.h"
 
 namespace CVC4 {
+
+class ProofNode;
 
 /** A class to convert ProofNode objects to s-expressions */
 class ProofNodeToSExpr
@@ -47,6 +49,8 @@ class ProofNodeToSExpr
   std::map<PfRule, Node> d_pfrMap;
   /** Dummy ":args" marker */
   Node d_argsMarker;
+  /** Dummy ":conclusion" marker */
+  Node d_conclusionMarker;
   /** map proof nodes to their s-expression */
   std::map<const ProofNode*, Node> d_pnMap;
   /**

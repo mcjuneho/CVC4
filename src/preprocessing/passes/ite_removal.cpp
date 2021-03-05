@@ -18,6 +18,10 @@
 #include "preprocessing/passes/ite_removal.h"
 
 #include "options/smt_options.h"
+#include "preprocessing/assertion_pipeline.h"
+#include "preprocessing/preprocessing_pass_context.h"
+#include "proof/proof_manager.h"
+#include "prop/prop_engine.h"
 #include "theory/rewriter.h"
 #include "theory/theory_preprocessor.h"
 
@@ -54,10 +58,10 @@ PreprocessingPassResult IteRemoval::applyInternal(AssertionPipeline* assertions)
     Assert(newSkolems.size() == newAsserts.size());
     for (unsigned j = 0, nnasserts = newAsserts.size(); j < nnasserts; j++)
     {
-      imap[newSkolems[j]] = assertions->size();
+      imap[assertions->size()] = newSkolems[j];
       assertions->pushBackTrusted(newAsserts[j]);
       // new assertions have a dependence on the node (old pf architecture)
-      if (options::unsatCores() && !options::proofNew())
+      if (options::unsatCores() && !options::proof())
       {
         ProofManager::currentPM()->addDependence(newAsserts[j].getProven(),
                                                  assertion);

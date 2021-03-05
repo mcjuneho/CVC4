@@ -18,23 +18,21 @@
 
 #pragma once
 
-#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "context/cdinsert_hashmap.h"
 #include "context/context.h"
-#include "expr/lazy_proof.h"
 #include "expr/node.h"
-#include "expr/term_context_stack.h"
-#include "expr/term_conversion_proof_generator.h"
-#include "theory/eager_proof_generator.h"
+#include "expr/term_context.h"
 #include "theory/trust_node.h"
-#include "util/bool.h"
 #include "util/hash.h"
 
 namespace CVC4 {
 
-typedef std::unordered_map<Node, unsigned, NodeHashFunction> IteSkolemMap;
+class LazyCDProof;
+class ProofNodeManager;
+class TConvProofGenerator;
 
 class RemoveTermFormulas {
  public:
@@ -135,6 +133,10 @@ class RemoveTermFormulas {
    */
   void getSkolems(TNode n,
                   std::unordered_set<Node, NodeHashFunction>& skolems) const;
+  /**
+   * Does n have skolems introduced by this class?
+   */
+  bool hasSkolems(TNode n) const;
 
   /**
    * Get the lemma for the skolem, or the null node if k is not a skolem this

@@ -16,6 +16,7 @@
 #define CVC4__THEORY__ARITH__NL__EXT__MONOMIAL_CHECK_H
 
 #include "expr/node.h"
+#include "theory/theory_inference.h"
 #include "theory/arith/nl/ext/ext_state.h"
 
 namespace CVC4 {
@@ -136,7 +137,7 @@ class MonomialCheck
       Node b,
       NodeMultiset& b_exp_proc,
       std::vector<Node>& exp,
-      std::vector<ArithLemma>& lem,
+      std::vector<SimpleTheoryLemma>& lem,
       std::map<int, std::map<Node, std::map<Node, Node> > >& cmp_infers);
   /** helper function for above
    *
@@ -154,7 +155,7 @@ class MonomialCheck
       NodeMultiset& b_exp_proc,
       int status,
       std::vector<Node>& exp,
-      std::vector<ArithLemma>& lem,
+      std::vector<SimpleTheoryLemma>& lem,
       std::map<int, std::map<Node, std::map<Node, Node> > >& cmp_infers);
   /** Check whether we have already inferred a relationship between monomials
    * x and y based on the information in cmp_infers. This computes the

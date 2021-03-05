@@ -21,6 +21,7 @@
 
 #include "api/cvc4cpp.h"
 #include "expr/dtype.h"
+#include "expr/dtype_cons.h"
 #include "expr/expr_manager.h"
 #include "expr/node.h"
 #include "expr/node_builder.h"
@@ -28,12 +29,11 @@
 #include "expr/node_value.h"
 #include "smt/smt_engine.h"
 #include "test_node.h"
-#include "test_utils.h"
 #include "theory/rewriter.h"
 
 namespace CVC4 {
 
-using namespace CVC4::kind;
+using namespace kind;
 
 namespace test {
 
@@ -53,12 +53,12 @@ std::vector<Node> makeNSkolemNodes(NodeManager* nodeManager,
 }
 }  // namespace
 
-class TestNodeBlackNode : public TestNodeBlack
+class TestNodeBlackNode : public TestNode
 {
  protected:
   void SetUp() override
   {
-    TestNodeBlack::SetUp();
+    TestNode::SetUp();
     // setup an SMT engine so that options are in scope
     Options opts;
     char* argv[2];

@@ -32,6 +32,7 @@ namespace CVC4 {
 namespace theory {
   
 class QuantifiersEngine;
+class DecisionManager;
 
 namespace quantifiers {
 
@@ -54,6 +55,8 @@ class QuantifiersModules
   void initialize(QuantifiersEngine* qe,
                   QuantifiersState& qs,
                   QuantifiersInferenceManager& qim,
+                  QuantifiersRegistry& qr,
+                  DecisionManager* dm,
                   std::vector<QuantifiersModule*>& modules);
 
  private:

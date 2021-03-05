@@ -21,7 +21,8 @@
 #include <unordered_set>
 
 #include "context/cdhashset.h"
-#include "theory/quantifiers/quant_util.h"
+#include "theory/decision_strategy.h"
+#include "theory/quantifiers/quant_module.h"
 
 namespace CVC4 {
 namespace theory {
@@ -64,7 +65,8 @@ class SygusInst : public QuantifiersModule
  public:
   SygusInst(QuantifiersEngine* qe,
             QuantifiersState& qs,
-            QuantifiersInferenceManager& qim);
+            QuantifiersInferenceManager& qim,
+            QuantifiersRegistry& qr);
   ~SygusInst() = default;
 
   bool needsCheck(Theory::Effort e) override;

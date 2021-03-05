@@ -17,7 +17,7 @@
 #ifndef CVC4__THEORY__BV__BITBLAST_SIMPLE_BITBLASTER_H
 #define CVC4__THEORY__BV__BITBLAST_SIMPLE_BITBLASTER_H
 
-#include "theory/bv/bitblast/lazy_bitblaster.h"
+#include "theory/bv/bitblast/bitblaster.h"
 
 namespace CVC4 {
 namespace theory {
@@ -57,6 +57,9 @@ class BBSimple : public TBitblaster<Node>
   bool collectModelValues(TheoryModel* m, const std::set<Node>& relevantTerms);
 
   prop::SatSolver* getSatSolver() override { Unreachable(); }
+
+  /** Checks whether node is a variable introduced via `makeVariable`.*/
+  bool isVariable(TNode node);
 
  private:
   /** Query SAT solver for assignment of node 'a'. */

@@ -19,7 +19,6 @@
 #ifndef CVC4__PRINTER__PRINTER_H
 #define CVC4__PRINTER__PRINTER_H
 
-#include <map>
 #include <string>
 
 #include "expr/node.h"
@@ -33,8 +32,8 @@ namespace CVC4 {
 class Command;
 class CommandStatus;
 class UnsatCore;
-class InstantiationList;
-class SkolemList;
+struct InstantiationList;
+struct SkolemList;
 
 class Printer
 {
@@ -217,7 +216,7 @@ class Printer
   /** Print set-info command */
   virtual void toStreamCmdSetInfo(std::ostream& out,
                                   const std::string& flag,
-                                  SExpr sexpr) const;
+                                  const std::string& value) const;
 
   /** Print get-info command */
   virtual void toStreamCmdGetInfo(std::ostream& out,
@@ -226,7 +225,7 @@ class Printer
   /** Print set-option command */
   virtual void toStreamCmdSetOption(std::ostream& out,
                                     const std::string& flag,
-                                    SExpr sexpr) const;
+                                    const std::string& value) const;
 
   /** Print get-option command */
   virtual void toStreamCmdGetOption(std::ostream& out,

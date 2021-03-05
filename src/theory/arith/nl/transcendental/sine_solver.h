@@ -21,8 +21,6 @@
 #include <vector>
 
 #include "expr/node.h"
-#include "theory/arith/inference_manager.h"
-#include "theory/arith/nl/nl_model.h"
 #include "theory/arith/nl/transcendental/transcendental_state.h"
 
 namespace CVC4 {
@@ -87,7 +85,8 @@ class SineSolver
   void checkMonotonic();
 
   /** Sent tangent lemma around c for e */
-  void doTangentLemma(TNode e, TNode c, TNode poly_approx, int region);
+  void doTangentLemma(
+      TNode e, TNode c, TNode poly_approx, int region, std::uint64_t d);
 
   /** Sent secant lemmas around c for e */
   void doSecantLemmas(TNode e,

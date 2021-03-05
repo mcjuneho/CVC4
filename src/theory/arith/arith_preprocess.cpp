@@ -14,6 +14,8 @@
 
 #include "theory/arith/arith_preprocess.h"
 
+#include "theory/arith/inference_manager.h"
+
 namespace CVC4 {
 namespace theory {
 namespace arith {
@@ -48,8 +50,8 @@ bool ArithPreprocess::reduceAssertion(TNode atom)
   Assert(tn.getKind() == TrustNodeKind::REWRITE);
   // tn is of kind REWRITE, turn this into a LEMMA here
   TrustNode tlem = TrustNode::mkTrustLemma(tn.getProven(), tn.getGenerator());
-  // must preprocess
-  d_im.trustedLemma(tlem);
+  // send the trusted lemma
+  d_im.trustedLemma(tlem, InferenceId::ARITH_PP_ELIM_OPERATORS);
   // mark the atom as reduced
   d_reduced[atom] = true;
   return true;

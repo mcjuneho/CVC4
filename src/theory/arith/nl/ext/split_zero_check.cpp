@@ -15,9 +15,11 @@
 #include "theory/arith/nl/ext/split_zero_check.h"
 
 #include "expr/node.h"
+#include "expr/proof.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/arith/inference_manager.h"
 #include "theory/arith/nl/nl_model.h"
+#include "theory/rewriter.h"
 
 namespace CVC4 {
 namespace theory {
@@ -45,7 +47,8 @@ void SplitZeroCheck::check()
         proof->addStep(lem, PfRule::SPLIT, {}, {eq});
       }
       d_data->d_im.addPendingPhaseRequirement(eq, true);
-      d_data->d_im.addPendingArithLemma(lem, InferenceId::NL_SPLIT_ZERO, proof);
+      d_data->d_im.addPendingLemma(
+          lem, InferenceId::ARITH_NL_SPLIT_ZERO, proof);
     }
   }
 }

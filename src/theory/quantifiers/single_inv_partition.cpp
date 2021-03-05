@@ -14,8 +14,11 @@
  **/
 #include "theory/quantifiers/single_inv_partition.h"
 
+#include <sstream>
+
 #include "expr/node_algorithm.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/rewriter.h"
 
 using namespace CVC4;
 using namespace CVC4::kind;

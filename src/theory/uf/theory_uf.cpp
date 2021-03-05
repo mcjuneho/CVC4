@@ -18,6 +18,7 @@
 #include "theory/uf/theory_uf.h"
 
 #include <memory>
+#include <sstream>
 
 #include "expr/node_algorithm.h"
 #include "expr/proof_node_manager.h"
@@ -51,7 +52,7 @@ TheoryUF::TheoryUF(context::Context* c,
       d_functionsTerms(c),
       d_symb(u, instanceName),
       d_state(c, u, valuation),
-      d_im(*this, d_state, pnm),
+      d_im(*this, d_state, pnm, "theory::uf", false),
       d_notify(d_im, *this)
 {
   d_true = NodeManager::currentNM()->mkConst( true );
@@ -315,7 +316,7 @@ void TheoryUF::presolve() {
         ++i) {
       Debug("uf") << "uf: generating a lemma: " << *i << std::endl;
       // no proof generator provided
-      d_im.lemma(*i);
+      d_im.lemma(*i, InferenceId::UF_BREAK_SYMMETRY);
     }
   }
   if( d_thss ){

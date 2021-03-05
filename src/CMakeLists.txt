@@ -242,6 +242,8 @@ libcvc4_add_sources(
   smt/model_blocker.h
   smt/node_command.cpp
   smt/node_command.h
+  smt/optimization_solver.cpp
+  smt/optimization_solver.h
   smt/options_manager.cpp
   smt/options_manager.h
   smt/output_manager.cpp
@@ -291,8 +293,6 @@ libcvc4_add_sources(
   theory/arith/approx_simplex.h
   theory/arith/arith_ite_utils.cpp
   theory/arith/arith_ite_utils.h
-  theory/arith/arith_lemma.cpp
-  theory/arith/arith_lemma.h
   theory/arith/arith_msum.cpp
   theory/arith/arith_msum.h
   theory/arith/arith_preprocess.cpp
@@ -333,8 +333,6 @@ libcvc4_add_sources(
   theory/arith/fc_simplex.h
   theory/arith/infer_bounds.cpp
   theory/arith/infer_bounds.h
-  theory/arith/inference_id.cpp
-  theory/arith/inference_id.h
   theory/arith/inference_manager.cpp
   theory/arith/inference_manager.h
   theory/arith/linear_equality.cpp
@@ -351,6 +349,10 @@ libcvc4_add_sources(
   theory/arith/nl/cad/constraints.h
   theory/arith/nl/cad/projections.cpp
   theory/arith/nl/cad/projections.h
+  theory/arith/nl/cad/proof_checker.cpp
+  theory/arith/nl/cad/proof_checker.h
+  theory/arith/nl/cad/proof_generator.cpp
+  theory/arith/nl/cad/proof_generator.h
   theory/arith/nl/cad/variable_ordering.cpp
   theory/arith/nl/cad/variable_ordering.h
   theory/arith/nl/ext/constraint.cpp
@@ -516,6 +518,8 @@ libcvc4_add_sources(
   theory/bv/bitblast/eager_bitblaster.h
   theory/bv/bitblast/lazy_bitblaster.cpp
   theory/bv/bitblast/lazy_bitblaster.h
+  theory/bv/bitblast/proof_bitblaster.cpp
+  theory/bv/bitblast/proof_bitblaster.h
   theory/bv/bitblast/simple_bitblaster.cpp
   theory/bv/bitblast/simple_bitblaster.h
   theory/bv/bv_eager_solver.cpp
@@ -525,6 +529,8 @@ libcvc4_add_sources(
   theory/bv/bv_quick_check.cpp
   theory/bv/bv_quick_check.h
   theory/bv/bv_solver.h
+  theory/bv/bv_solver_bitblast.cpp
+  theory/bv/bv_solver_bitblast.h
   theory/bv/bv_solver_lazy.cpp
   theory/bv/bv_solver_lazy.h
   theory/bv/bv_solver_simple.cpp
@@ -582,6 +588,8 @@ libcvc4_add_sources(
   theory/datatypes/theory_datatypes_type_rules.h
   theory/datatypes/theory_datatypes_utils.cpp
   theory/datatypes/theory_datatypes_utils.h
+  theory/datatypes/tuple_project_op.cpp
+  theory/datatypes/tuple_project_op.h
   theory/datatypes/type_enumerator.cpp
   theory/datatypes/type_enumerator.h
   theory/decision_manager.cpp
@@ -610,8 +618,12 @@ libcvc4_add_sources(
   theory/fp/theory_fp_type_rules.h
   theory/fp/type_enumerator.h
   theory/interrupted.h
+  theory/inference_id.cpp
+  theory/inference_id.h
   theory/inference_manager_buffered.cpp
   theory/inference_manager_buffered.h
+  theory/lazy_tree_proof_generator.cpp
+  theory/lazy_tree_proof_generator.h
   theory/logic_info.cpp
   theory/logic_info.h
   theory/model_manager.cpp
@@ -662,6 +674,7 @@ libcvc4_add_sources(
   theory/quantifiers/ematching/inst_match_generator_multi_linear.h
   theory/quantifiers/ematching/inst_match_generator_simple.cpp
   theory/quantifiers/ematching/inst_match_generator_simple.h
+  theory/quantifiers/ematching/inst_strategy.cpp
   theory/quantifiers/ematching/inst_strategy.h
   theory/quantifiers/ematching/inst_strategy_e_matching.cpp
   theory/quantifiers/ematching/inst_strategy_e_matching.h
@@ -691,6 +704,8 @@ libcvc4_add_sources(
   theory/quantifiers/first_order_model.h
   theory/quantifiers/fmf/bounded_integers.cpp
   theory/quantifiers/fmf/bounded_integers.h
+  theory/quantifiers/fmf/first_order_model_fmc.cpp
+  theory/quantifiers/fmf/first_order_model_fmc.h
   theory/quantifiers/fmf/full_model_check.cpp
   theory/quantifiers/fmf/full_model_check.h
   theory/quantifiers/fmf/model_builder.cpp
@@ -723,12 +738,16 @@ libcvc4_add_sources(
   theory/quantifiers/quant_split.h
   theory/quantifiers/quant_util.cpp
   theory/quantifiers/quant_util.h
+  theory/quantifiers/quant_module.cpp
+  theory/quantifiers/quant_module.h
   theory/quantifiers/quantifiers_attributes.cpp
   theory/quantifiers/quantifiers_attributes.h
   theory/quantifiers/quantifiers_inference_manager.cpp
   theory/quantifiers/quantifiers_inference_manager.h
   theory/quantifiers/quantifiers_modules.cpp
   theory/quantifiers/quantifiers_modules.h
+  theory/quantifiers/quantifiers_registry.cpp
+  theory/quantifiers/quantifiers_registry.h
   theory/quantifiers/quantifiers_rewriter.cpp
   theory/quantifiers/quantifiers_rewriter.h
   theory/quantifiers/quantifiers_state.cpp
@@ -829,6 +848,8 @@ libcvc4_add_sources(
   theory/quantifiers/term_database.h
   theory/quantifiers/term_enumeration.cpp
   theory/quantifiers/term_enumeration.h
+  theory/quantifiers/term_registry.cpp
+  theory/quantifiers/term_registry.h
   theory/quantifiers/term_util.cpp
   theory/quantifiers/term_util.h
   theory/quantifiers/theory_quantifiers.cpp
@@ -975,7 +996,6 @@ libcvc4_add_sources(
   theory/theory_rewriter.h
   theory/theory_state.cpp
   theory/theory_state.h
-  theory/theory_test_utils.h
   theory/trust_node.cpp
   theory/trust_node.h
   theory/trust_substitutions.cpp

@@ -20,6 +20,7 @@
 #include "options/theory_options.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/arith/arith_utilities.h"
+#include "theory/theory_model.h"
 #include "theory/rewriter.h"
 
 using namespace CVC4::kind;
@@ -640,7 +641,7 @@ bool NlModel::solveEqualitySimple(Node eq,
     Node conf = seq.negate();
     Trace("nl-ext-lemma") << "NlModel::Lemma : quadratic no root : " << conf
                           << std::endl;
-    lemmas.push_back(conf);
+    lemmas.emplace_back(InferenceId::ARITH_NL_CM_QUADRATIC_EQ, conf);
     Trace("nl-ext-cms") << "...fail due to negative discriminant." << std::endl;
     return false;
   }
